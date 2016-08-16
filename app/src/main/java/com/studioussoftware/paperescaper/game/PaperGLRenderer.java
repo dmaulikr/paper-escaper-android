@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
 import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
+import com.studioussoftware.paperescaper.interfaces.IGameObject;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -14,16 +15,23 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class PaperGLRenderer implements GLSurfaceView.Renderer {
 
-    private final float[] ProjectionMatrix = new float[16];
+    private final float[] PerspectiveMatrix = new float[16];
     private final float[] ViewMatrix = new float[16];
 
-    private PaperSheet sheet;
+    private PaperSheet sheet;   // TODO: Have object creation be done by the GameManager (attempts to do this have failed)
+
+    public void updateCamera(Vector3 position, Vector3 forward, Vector3 up) {
+        Matrix.setLookAtM(ViewMatrix, 0,
+                position.x, position.y, position.z,
+                position.x + forward.x, position.y + forward.y, position.z + forward.z,     // Expects lookAtPoint
+                up.x, up.y, up.z);
+    }
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
         sheet = new PaperSheet();
+        sheet.initGL();
     }
 
     @Override
@@ -31,12 +39,8 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
         // Redraw background oclor
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
-        // Set the camera's initial position
-        Matrix.setLookAtM(ViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1f, 0f);
-
-        sheet.draw(ProjectionMatrix, ViewMatrix);
+        sheet.draw(PerspectiveMatrix, ViewMatrix);
     }
-
 
     @Override
     public void onSurfaceChanged(GL10 unused, int width, int height) {
@@ -44,8 +48,7 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
 
         float ratio = width / (float) height;
 
-        // This is applied to object coordinates in the onDrawFrame method
-        Matrix.frustumM(ProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        Matrix.perspectiveM(PerspectiveMatrix, 0, 90, ratio, 0.01f, 10000f);
     }
 
     public static int loadShader(int type, String shaderCode) {
