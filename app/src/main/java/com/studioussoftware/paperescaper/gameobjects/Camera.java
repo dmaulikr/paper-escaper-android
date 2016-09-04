@@ -38,17 +38,20 @@ public class Camera {
     }
 
     /**
-     * Rotate the camera along the local x axis in a clockwise direction
-     * This is to avoid unnecessary Roll, see http://gamedev.stackexchange.com/questions/103242/why-is-the-camera-tilting-around-the-z-axis-when-i-only-specified-x-and-y
+     * Rotate the camera along the world x axis in a clockwise direction
      * @param angle
      */
     public void pitch(float angle) {
         if (angle == 0) return;
 
-        Vector3 right = getRight();
-        forward = forward.rotated(angle, right).normalized();
+        // NOTE: If undesired Roll occurs when pitching/yawing, switch to using the local x axis, not the world x axis
+        // forward = forward.rotated(angle, right).normalized();
+        // See: http://gamedev.stackexchange.com/questions/103242/why-is-the-camera-tilting-around-the-z-axis-when-i-only-specified-x-and-y
+
+        forward = forward.rotated(angle, new Vector3(1, 0, 0)).normalized();
 
         // Fix the now incorrect up vector
+        Vector3 right = Vector3.cross(forward, new Vector3(0, 1, 0)).normalized();
         up = Vector3.cross(right, forward).normalized();
     }
 
