@@ -36,6 +36,7 @@ public class GameManager implements IManager, ScaleGestureDetector.OnScaleGestur
     @Override
     public boolean handleTouchEvent(MotionEvent event) {
         scaleDetector.onTouchEvent(event);
+
         float x = event.getX();
         float y = event.getY();
 
@@ -66,8 +67,8 @@ public class GameManager implements IManager, ScaleGestureDetector.OnScaleGestur
 
     private void swipe(float x, float y) {
         float multiplier = 0.1f;
-        camera.yaw(x * multiplier);
-        camera.pitch(y * multiplier);
+        camera.yaw(-x * multiplier);
+        camera.pitch(-y * multiplier);
         updateCamera();
     }
 

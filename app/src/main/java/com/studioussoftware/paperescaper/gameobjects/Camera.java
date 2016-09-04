@@ -1,7 +1,5 @@
 package com.studioussoftware.paperescaper.gameobjects;
 
-import android.opengl.Matrix;
-
 import com.studioussoftware.paperescaper.game.Vector3;
 
 /**
@@ -36,27 +34,32 @@ public class Camera {
     }
 
     public void roll(float angle) {
-
+        if (angle == 0) return;
     }
 
     /**
-     * Rotate the camera along the x axis in a clockwise direction
+     * Rotate the camera along the local x axis in a clockwise direction
+     * This is to avoid unnecessary Roll, see http://gamedev.stackexchange.com/questions/103242/why-is-the-camera-tilting-around-the-z-axis-when-i-only-specified-x-and-y
      * @param angle
      */
     public void pitch(float angle) {
-        forward = forward.rotated(angle, new Vector3(-1, 0, 0)).normalized();
+        if (angle == 0) return;
+
+        Vector3 right = getRight();
+        forward = forward.rotated(angle, right).normalized();
 
         // Fix the now incorrect up vector
-        Vector3 right = Vector3.cross(forward, up);
         up = Vector3.cross(right, forward).normalized();
     }
 
     /**
-     * Rotate the camera along the y axis in a clockwise direction
+     * Rotate the camera along the world y axis in a clockwise direction
      * @param angle
      */
     public void yaw(float angle) {
-        forward = forward.rotated(angle, new Vector3(0, -1, 0)).normalized();
+        if (angle == 0) return;
+
+        forward = forward.rotated(angle, new Vector3(0, 1, 0)).normalized();
     }
 
     public Vector3 getUp() {
@@ -71,7 +74,5 @@ public class Camera {
         up = up_.normalized();
     }
 
-    public Vector3 getRight() {
-        return Vector3.cross(forward, up);
-    }
+    private Vector3 getRight() { return Vector3.cross(forward, up); }
 }

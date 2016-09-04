@@ -1,16 +1,28 @@
 package com.studioussoftware.paperescaper.game;
 
+import android.icu.text.DecimalFormat;
 import android.opengl.Matrix;
+
+import java.math.RoundingMode;
 
 /**
  * Created by Robbie Wolfe on 8/9/2016.
  */
 public class Vector3 {
+    private static final boolean ROUND_DISPLAY = true;
+    private static final float EPSILON = 0.005f;      // if less than this consider zero
     public float x, y, z;
 
     public Vector3() {}
     public Vector3(float x_, float y_, float z_) {
         set(x_, y_, z_);
+    }
+
+    private float zeroed(float a) {
+        if (Math.abs(a) < EPSILON) {
+            return 0;
+        }
+        return a;
     }
 
     public float[] asVec4Array() {
@@ -41,6 +53,14 @@ public class Vector3 {
 
     public float length() {
         return (float) Math.sqrt(x * x + y * y + z * z);
+    }
+
+    /**
+     * Returns a new vector similar to this but any very small values are made zero
+     * @return
+     */
+    public Vector3 zeroed() {
+        return new Vector3(zeroed(x), zeroed(y), zeroed(z));
     }
 
     /**
@@ -92,6 +112,11 @@ public class Vector3 {
     }
 
     public String toString() {
+        if (ROUND_DISPLAY) {
+            java.text.DecimalFormat format = new java.text.DecimalFormat("#.######");
+            format.setRoundingMode(RoundingMode.CEILING);
+            return "[" + format.format(x) + ", " + format.format(y) + ", " + format.format(z) + "]";
+        }
         return "[" + x + ", " + y + ", " + z + "]";
     }
 }
