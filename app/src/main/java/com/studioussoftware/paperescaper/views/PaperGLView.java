@@ -12,8 +12,7 @@ import com.studioussoftware.paperescaper.interfaces.IManager;
  */
 public class PaperGLView extends GLSurfaceView {
 
-    private IManager manager;
-    private PaperGLRenderer renderer;
+    private IManager manager = null;
 
     public PaperGLView(Context context) {
         super(context);
@@ -21,12 +20,7 @@ public class PaperGLView extends GLSurfaceView {
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2);
 
-        renderer = new PaperGLRenderer();
-        setRenderer(renderer);
-    }
-
-    public PaperGLRenderer getRenderer() {
-        return renderer;
+        setRenderer(new PaperGLRenderer(this));
     }
 
     public void setManager(IManager obj) {
@@ -36,6 +30,9 @@ public class PaperGLView extends GLSurfaceView {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         // Send to the manager to deal with
+        if (manager == null) {
+            return super.onTouchEvent(event);
+        }
         return manager.handleTouchEvent(event);
     }
 }

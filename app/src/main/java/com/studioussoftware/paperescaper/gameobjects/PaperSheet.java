@@ -34,7 +34,6 @@ public class PaperSheet implements IGameObject {
             "  gl_FragColor = vColor;" +
             "}";
 
-    private boolean glInitialized = false;
     private int glProgram;
 
     static final int COORDS_PER_VERTEX = 3;
@@ -70,30 +69,30 @@ public class PaperSheet implements IGameObject {
     private static final float SCALE_X = SCALE_Y * PAPER_RATIO;
     private static final float SCALE_Z = 0.5f;
 
-    private float pitch = 0.f;//90.f;
-    private float yRotation = 0.f;
+    private float pitch = -90.f;
 
     // Move the sheet so the origin is in the middle of where the sheet falls
     private float xLocation = 0;
-    private float yLocation = 0;//SCALE_Y;
-    private float zLocation = 0;//-SCALE_Y;
+    private float yLocation = SCALE_Y;
+    private float zLocation = -SCALE_Y;
+
+    private boolean rotating = false;
+    private boolean shouldDelete = false;
 
     public PaperSheet() {
         initGeometry();
+        initGL();
     }
 
-    public void initGL() {
-        if (!glInitialized) {
-            // Set up Shaders
-            int vertexShader = PaperGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-            int fragmentShader = PaperGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+    private void initGL() {
+        // Set up Shaders
+        int vertexShader = PaperGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
+        int fragmentShader = PaperGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
 
-            glProgram = GLES20.glCreateProgram();
-            GLES20.glAttachShader(glProgram, vertexShader);
-            GLES20.glAttachShader(glProgram, fragmentShader);
-            GLES20.glLinkProgram(glProgram);
-            glInitialized = true;
-        }
+        glProgram = GLES20.glCreateProgram();
+        GLES20.glAttachShader(glProgram, vertexShader);
+        GLES20.glAttachShader(glProgram, fragmentShader);
+        GLES20.glLinkProgram(glProgram);
     }
 
     private void initGeometry() {
@@ -131,17 +130,50 @@ public class PaperSheet implements IGameObject {
         drawListBuffer.position(0);
     }
 
-    private void update() {
-        //pitch += 0.5f;// = (pitch + 0.01f > 90) ? 90 : pitch + 0.01f;
+    public void startRotating() {
+        rotating = true;
+    }
+
+    @Override
+    public void update() {
+        if (rotating) {
+            pitch += 0.5f;
+            if (pitch >= 90.f) {
+                rotating = false;
+                shouldDelete = true;
+            }
+        }
+    }
+
+    private void setupModelMatrix() {
         Matrix.setIdentityM(ModelMatrix, 0);
-        Matrix.translateM(ModelMatrix, 0, xLocation, yLocation, zLocation);
+
+        /*Matrix.translateM(ModelMatrix, 0, xLocation, yLocation, zLocation);
         Matrix.rotateM(ModelMatrix, 0, pitch, 1, 0, 0);
-        Matrix.rotateM(ModelMatrix, 0, yRotation, 0, 1, 0);
+        Matrix.scaleM(ModelMatrix, 0, SCALE_X, SCALE_Y, SCALE_Z);*/
+
+        // Transformations should be performed backwards
+
+        // Real translation
+        Matrix.translateM(ModelMatrix, 0, xLocation, yLocation, zLocation);
+
+        // Translate back to origin
+        Matrix.translateM(ModelMatrix, 0, 0, -SCALE_Y, 0);
+
+        // Rotate
+        Matrix.rotateM(ModelMatrix, 0, pitch, 1, 0, 0);
+
+        // Translate in order to rotate at bottom of the sheet
+        Matrix.translateM(ModelMatrix, 0, 0, SCALE_Y, 0);
+
+        // Make it the right size
         Matrix.scaleM(ModelMatrix, 0, SCALE_X, SCALE_Y, SCALE_Z);
     }
 
+    @Override
     public void draw(float[] perspectiveMatrix, float[] vMatrix) {
-        update();
+        setupModelMatrix();
+
         GLES20.glUseProgram(glProgram);
 
         GLES20.glFrontFace(GLES20.GL_CCW); // Front face in counter-clockwise orientation
@@ -173,9 +205,12 @@ public class PaperSheet implements IGameObject {
         GLES20.glDisableVertexAttribArray(positionHandle);
     }
 
+    public boolean getShouldDelete() {
+        return shouldDelete;
+    }
+
     public void move(float x, float y) {
         pitch += y < 0 ? -1.0f : 1.0f;
-        yRotation += x < 0 ? -1.0f : 1.0f;
     }
 
     public void zoom(float scaleFactor) {

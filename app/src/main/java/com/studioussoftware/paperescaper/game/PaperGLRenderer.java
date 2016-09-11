@@ -4,8 +4,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
-import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
-import com.studioussoftware.paperescaper.interfaces.IGameObject;
+import com.studioussoftware.paperescaper.views.PaperGLView;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -18,7 +17,12 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
     private final float[] PerspectiveMatrix = new float[16];
     private final float[] ViewMatrix = new float[16];
 
-    private PaperSheet sheet;   // TODO: Have object creation be done by the GameManager (attempts to do this have failed)
+    private GameManager manager;
+
+    public PaperGLRenderer(PaperGLView view) {
+        manager = new GameManager(view.getContext(), this);
+        view.setManager(manager);
+    }
 
     public void updateCamera(Vector3 position, Vector3 forward, Vector3 up) {
         Matrix.setLookAtM(ViewMatrix, 0,
@@ -30,16 +34,16 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        sheet = new PaperSheet();
-        sheet.initGL();
+        manager.initGame();
     }
 
     @Override
     public void onDrawFrame(GL10 unused) {
-        // Redraw background oclor
+        // Redraw background color
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
-        sheet.draw(PerspectiveMatrix, ViewMatrix);
+        manager.updateGame();
+        manager.drawGame(PerspectiveMatrix, ViewMatrix);
     }
 
     @Override
@@ -48,7 +52,7 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
 
         float ratio = width / (float) height;
 
-        Matrix.perspectiveM(PerspectiveMatrix, 0, 90, ratio, 0.01f, 10000f);
+        Matrix.perspectiveM(PerspectiveMatrix, 0, 60, ratio, 0.01f, 10000f);
     }
 
     public static int loadShader(int type, String shaderCode) {

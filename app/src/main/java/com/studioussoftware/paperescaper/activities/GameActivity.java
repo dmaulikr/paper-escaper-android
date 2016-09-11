@@ -9,7 +9,6 @@ import com.studioussoftware.paperescaper.views.PaperGLView;
 public class GameActivity extends Activity {
 
     private PaperGLView openGL;
-    private GameManager manager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,7 +16,5 @@ public class GameActivity extends Activity {
 
         openGL = new PaperGLView(this);
         setContentView(openGL);
-
-        manager = new GameManager(this, openGL);
     }
 }

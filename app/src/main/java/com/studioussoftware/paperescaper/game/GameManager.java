@@ -1,12 +1,15 @@
 package com.studioussoftware.paperescaper.game;
 
+import java.util.LinkedList;
+
 import android.content.Context;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
 import com.studioussoftware.paperescaper.gameobjects.Camera;
+import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
+import com.studioussoftware.paperescaper.interfaces.IGameObject;
 import com.studioussoftware.paperescaper.interfaces.IManager;
-import com.studioussoftware.paperescaper.views.PaperGLView;
 
 /**
  * Created by Robbie Wolfe on 8/9/2016.
@@ -17,20 +20,32 @@ public class GameManager implements IManager, ScaleGestureDetector.OnScaleGestur
     private PaperGLRenderer renderer;
     private Camera camera;
 
+    private boolean gameInitialized = false;
+    private boolean gameStarted = false;
+    private boolean playerDead = false;
+
     private float previousScale = 0;
     private float previousX = 0;
     private float previousY = 0;
 
-    public GameManager(Context context, PaperGLView glView) {
-        camera = new Camera(new Vector3(0, 0, 3000),
-                            new Vector3(0, 0, -1),
-                            new Vector3(0, 1, 0));
+    private LinkedList<PaperSheet> sheets;
 
+    public GameManager(Context context, PaperGLRenderer renderer_) {
         scaleDetector = new ScaleGestureDetector(context, this);
 
-        glView.setManager(this);
-        renderer = glView.getRenderer();
-        updateCamera();
+        renderer = renderer_;
+    }
+
+    public void initGame() {
+        if (!gameInitialized) {
+            camera = new Camera(new Vector3(0, 0, 3000),
+                    new Vector3(0, 0, -1),
+                    new Vector3(0, 1, 0));
+            updateCamera();
+
+            createInitialSheets();
+            gameInitialized = true;
+        }
     }
 
     @Override
@@ -88,5 +103,40 @@ public class GameManager implements IManager, ScaleGestureDetector.OnScaleGestur
 
     private void updateCamera() {
         renderer.updateCamera(camera.getPosition(), camera.getForward(), camera.getUp());
+    }
+
+    private void createInitialSheets() {
+        sheets = new LinkedList<>();
+        for (int i = 0; i < 4; ++i) {
+            sheets.add(new PaperSheet());
+        }
+        sheets.getLast().startRotating();
+    }
+
+    public void updateGame() {
+        if (!gameStarted) {
+            Vector3 position = camera.getPosition();
+            // if timer == 2000
+            gameStarted = true;
+            position.y = 100;
+            camera.setPosition(position);
+            // else
+        }
+        if (gameStarted && !playerDead) {
+            for (PaperSheet sheet : sheets) {
+                sheet.update();
+            }
+            if (sheets.getLast().getShouldDelete()) {
+                sheets.removeLast();
+                sheets.addFirst(new PaperSheet());
+                sheets.getLast().startRotating();
+            }
+        }
+    }
+
+    public void drawGame(float[] perspectiveMatrix, float[] vMatrix) {
+        for (PaperSheet sheet : sheets) {
+            sheet.draw(perspectiveMatrix, vMatrix);
+        }
     }
 }
