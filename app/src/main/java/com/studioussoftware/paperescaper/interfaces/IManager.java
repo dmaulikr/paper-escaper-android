@@ -7,4 +7,6 @@ import android.view.MotionEvent;
  */
 public interface IManager {
     boolean handleTouchEvent(MotionEvent event);
+    void onJoystickMove(int angle, int power, int direction);
+    void setLevelChangedListener(ILevelChangedListener listener);
 }

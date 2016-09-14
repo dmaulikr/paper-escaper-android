@@ -4,6 +4,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.studioussoftware.paperescaper.model.Vector3;
 import com.studioussoftware.paperescaper.views.PaperGLView;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -20,7 +21,7 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
     private GameManager manager;
 
     public PaperGLRenderer(PaperGLView view) {
-        manager = new GameManager(view.getContext(), this);
+        manager = new GameManager(this);
         view.setManager(manager);
     }
 

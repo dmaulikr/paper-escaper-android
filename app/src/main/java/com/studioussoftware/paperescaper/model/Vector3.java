@@ -1,6 +1,5 @@
-package com.studioussoftware.paperescaper.game;
+package com.studioussoftware.paperescaper.model;
 
-import android.icu.text.DecimalFormat;
 import android.opengl.Matrix;
 
 import java.math.RoundingMode;
@@ -9,6 +8,14 @@ import java.math.RoundingMode;
  * Created by Robbie Wolfe on 8/9/2016.
  */
 public class Vector3 {
+    public static final Vector3 UNIT_X = new Vector3(1, 0, 0);
+    public static final Vector3 UNIT_Y = new Vector3(0, 1, 0);
+    public static final Vector3 UNIT_Z = new Vector3(0, 0, 1);
+    private static final Vector3[] AXIS_UNIT_VECTORS = {
+        UNIT_X,
+        UNIT_Y,
+        UNIT_Z
+    };
     private static final boolean ROUND_DISPLAY = true;
     private static final float EPSILON = 0.005f;      // if less than this consider zero
     public float x, y, z;
@@ -27,6 +34,10 @@ public class Vector3 {
 
     public float[] asVec4Array() {
         return new float[] { x, y, z, 1 };
+    }
+
+    public Vector3 clone() {
+        return new Vector3(x, y, z);
     }
 
     public void set(float x_, float y_, float z_) {
@@ -95,6 +106,17 @@ public class Vector3 {
 
     public static Vector3 cross(Vector3 u, Vector3 v) {
         return u.cross(v);
+    }
+
+    /**
+     * Returns a new Vector that is this rotated along the given Axis the amount of the given angle
+     * @param angle in degrees
+     * @param rotationAxis X Y or Z
+     * @return
+     */
+    public Vector3 rotated(float angle, Axis rotationAxis) {
+        Vector3 rotationVec = AXIS_UNIT_VECTORS[rotationAxis.ordinal()];
+        return rotated(angle, rotationVec);
     }
 
     /**

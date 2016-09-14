@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">PaperEscaper</string>
+    <string name="level_prefix">Level:</string>
 </resources>

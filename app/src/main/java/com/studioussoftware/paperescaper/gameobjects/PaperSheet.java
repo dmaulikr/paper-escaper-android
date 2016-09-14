@@ -78,8 +78,19 @@ public class PaperSheet implements IGameObject {
 
     private boolean rotating = false;
     private boolean shouldDelete = false;
+    private boolean floor = false;
+    private boolean shouldHaveHole = true;
 
     public PaperSheet() {
+        construct();
+    }
+
+    public PaperSheet(boolean shouldHaveHole_) {
+        shouldHaveHole = shouldHaveHole_;
+        construct();
+    }
+
+    private void construct() {
         initGeometry();
         initGL();
     }
@@ -137,7 +148,7 @@ public class PaperSheet implements IGameObject {
     @Override
     public void update() {
         if (rotating) {
-            pitch += 0.5f;
+            pitch += 0.25f;
             if (pitch >= 90.f) {
                 rotating = false;
                 shouldDelete = true;
@@ -147,10 +158,6 @@ public class PaperSheet implements IGameObject {
 
     private void setupModelMatrix() {
         Matrix.setIdentityM(ModelMatrix, 0);
-
-        /*Matrix.translateM(ModelMatrix, 0, xLocation, yLocation, zLocation);
-        Matrix.rotateM(ModelMatrix, 0, pitch, 1, 0, 0);
-        Matrix.scaleM(ModelMatrix, 0, SCALE_X, SCALE_Y, SCALE_Z);*/
 
         // Transformations should be performed backwards
 
@@ -209,11 +216,8 @@ public class PaperSheet implements IGameObject {
         return shouldDelete;
     }
 
-    public void move(float x, float y) {
-        pitch += y < 0 ? -1.0f : 1.0f;
-    }
-
-    public void zoom(float scaleFactor) {
-        zLocation = (-20 * scaleFactor) - 2;
+    public void setFloor() {
+        floor = true;
+        pitch = 90.0f;
     }
 }
