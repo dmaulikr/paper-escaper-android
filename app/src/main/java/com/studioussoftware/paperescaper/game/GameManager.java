@@ -2,7 +2,6 @@ package com.studioussoftware.paperescaper.game;
 
 import java.util.LinkedList;
 
-import android.content.Context;
 import android.view.MotionEvent;
 
 import com.studioussoftware.paperescaper.gameobjects.Camera;
@@ -10,6 +9,8 @@ import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
 import com.studioussoftware.paperescaper.interfaces.ILevelChangedListener;
 import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.studioussoftware.paperescaper.model.Axis;
+import com.studioussoftware.paperescaper.model.BoundsChecker;
+import com.studioussoftware.paperescaper.model.Difficulty;
 import com.studioussoftware.paperescaper.model.Vector3;
 
 /**
@@ -20,13 +21,17 @@ public class GameManager implements IManager {
     private ILevelChangedListener levelChangedListener;
     private PaperGLRenderer renderer;
     private Camera camera;
+    private BoundsChecker boundsChecker;
 
     private boolean gameInitialized = false;
     private boolean gameStarted = false;
     private boolean playerDead = false;
     private int level = 1;
 
-    private float previousScale = 0;
+    private float floorHeight = 1000;
+    private float floorWidth = 1000;
+    private final float floorBuffer = 20;   // Used for calculating player bounds
+
     private float previousX = 0;
     private float previousY = 0;
 
@@ -35,6 +40,8 @@ public class GameManager implements IManager {
 
     public GameManager(PaperGLRenderer renderer_) {
         renderer = renderer_;
+
+        updateFloorSize();
     }
 
     public void initGame() {
@@ -66,6 +73,11 @@ public class GameManager implements IManager {
         return true;
     }
 
+    /**
+     * Handle dragging on the screen, which should rotate the camera
+     * @param x
+     * @param y
+     */
     private void swipe(float x, float y) {
         float multiplier = 0.2f;
         camera.yaw(-x * multiplier);
@@ -73,9 +85,15 @@ public class GameManager implements IManager {
         updateCamera();
     }
 
+    /**
+     * Handle the player moving the Joystick to move the camera
+     * @param angle in degrees
+     * @param power [0 - 100]
+     * @param direction unused
+     */
     @Override
     public void onJoystickMove(int angle, int power, int direction) {
-        camera.walk(-angle, power / 8.f);
+        camera.walk(-angle, power / 8.f, boundsChecker);
         updateCamera();
     }
 
@@ -89,14 +107,34 @@ public class GameManager implements IManager {
 
     private void createInitialSheets() {
         // Create the floor
-        floor = new PaperSheet(false);
-        floor.setFloor();
+        floor = new PaperSheet(true);
 
         sheets = new LinkedList<>();
         for (int i = 0; i < 4; ++i) {
             sheets.add(new PaperSheet());
         }
         sheets.getLast().startRotating();
+    }
+
+    public void updateDifficulty(Difficulty level) {
+        switch (level) {
+            case EASY:
+                floorHeight = 600;
+                break;
+            case MEDIUM:
+                floorHeight = 1000;
+                break;
+            case HARD:
+                floorHeight = 1500;
+                break;
+        }
+        updateFloorSize();
+    }
+
+    private void updateFloorSize() {
+        PaperSheet.setPaperSize(floorHeight);
+        floorWidth = PaperSheet.getPaperWidth();
+        boundsChecker = new BoundsChecker(floorWidth, floorHeight, floorBuffer);
     }
 
     public void updateGame() {

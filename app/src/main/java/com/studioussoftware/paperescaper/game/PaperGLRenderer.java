@@ -4,6 +4,8 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
+import com.studioussoftware.paperescaper.model.Difficulty;
 import com.studioussoftware.paperescaper.model.Vector3;
 import com.studioussoftware.paperescaper.views.PaperGLView;
 
@@ -35,6 +37,8 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        PaperSheet.initGL();
+        manager.updateDifficulty(Difficulty.MEDIUM);    // TODO: Move this elsewhere
         manager.initGame();
     }
 

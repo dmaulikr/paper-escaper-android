@@ -1,6 +1,8 @@
 package com.studioussoftware.paperescaper.gameobjects;
 
 import com.studioussoftware.paperescaper.model.Axis;
+import com.studioussoftware.paperescaper.model.Constants;
+import com.studioussoftware.paperescaper.model.BoundsChecker;
 import com.studioussoftware.paperescaper.model.Vector3;
 
 /**
@@ -47,8 +49,9 @@ public class Camera {
      * Using the values provided by the joystick, update the camera's X/Z position
      * @param angle forward = 0, right = -90, backward = -180, left = 90
      * @param magnitude [0 - 12.5]
+     * @param boundsChecker used to check if can walk in this direction
      */
-    public void walk(int angle, float magnitude) {
+    public void walk(int angle, float magnitude, BoundsChecker boundsChecker) {
         // Move along the forward vector in the XZ plane
         Vector3 movementVec = forward.clone();
         movementVec.y = 0;
@@ -56,7 +59,10 @@ public class Camera {
         // Rotated in the Y axis according to the angle and scaled according to the magnitude
         movementVec = movementVec.rotated(angle, Axis.Y).scaled(magnitude);
 
-        position = position.added(movementVec);
+        // Only walk if within the game bounds (or regardless if DEV_MODE)
+        if (Constants.DEV_MODE || boundsChecker.withinBounds(position, movementVec)) {
+            position = position.added(movementVec);
+        }
     }
 
     public Vector3 getForward() {

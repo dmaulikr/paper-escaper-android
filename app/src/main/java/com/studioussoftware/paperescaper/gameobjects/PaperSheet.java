@@ -15,7 +15,10 @@ import java.nio.ShortBuffer;
  * Created by Robbie Wolfe on 8/8/2016.
  */
 public class PaperSheet implements IGameObject {
-    private final String vertexShaderCode =
+
+    ////////////////////////
+    // OpenGL and Geometry variables common to all PaperSheets
+    private static final String vertexShaderCode =
             "uniform mat4 uVMatrix;" +
             "uniform mat4 uMMatrix;" +
             "uniform mat4 uPMatrix;" +
@@ -27,17 +30,18 @@ public class PaperSheet implements IGameObject {
             "  vColor = aVertexColor;" +    // pass the vertex's color to the pixel shader
             "}";
 
-    private final String fragmentShaderCode =
+    private static final String fragmentShaderCode =
             "precision mediump float;" +    // how precise to be with floats
             "varying vec4 vColor;" +        // interpolated from the vertices
             "void main() {" +
             "  gl_FragColor = vColor;" +
             "}";
 
-    private int glProgram;
+    private static boolean glInitialized = false;
+    private static int glProgram;
 
-    static final int COORDS_PER_VERTEX = 3;
-    static float vertices[] = {
+    private static final int COORDS_PER_VERTEX = 3;
+    private static final float vertices[] = {
             // Front face (CC order)
             -1.0f,  1.0f, 1.0f,   // top left
             -1.0f, -1.0f, 1.0f,   // bottom left
@@ -50,63 +54,62 @@ public class PaperSheet implements IGameObject {
             -1.0f, -1.0f, -1.0f,     // bottom left
             -1.0f,  1.0f, -1.0f,     // top left
     };
-    private short drawOrder[] = { 0, 1, 2, 0, 2, 3,
-                                  4, 5, 6, 4, 6, 7};
-    private final int vertexStride = COORDS_PER_VERTEX * Float.BYTES;
+    private static final short drawOrder[] = { 0, 1, 2, 0, 2, 3,
+                                               4, 5, 6, 4, 6, 7};
+    private static final int vertexStride = COORDS_PER_VERTEX * Float.BYTES;
 
-    private final int COORDS_PER_COLOR = 4;
-    float colorFront[] = {1.0f, 0, 0, 1.0f}; // { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
-    float colorBack[] =  {0, 1.0f, 0, 1.0f}; //{ 0.76953125f, 0.63671875f, 0.22265625f, 1.0f };
-    private final int colorStride = COORDS_PER_COLOR * Float.BYTES;
+    private static final int COORDS_PER_COLOR = 4;
+    private static final float colorFront[] = {1.0f, 0, 0, 1.0f};
+    private static final float colorBack[] =  {0, 1.0f, 0, 1.0f};
+    private static final int colorStride = COORDS_PER_COLOR * Float.BYTES;
 
-    private FloatBuffer vertexBuffer;
-    private FloatBuffer colorBuffer;
-    private ShortBuffer drawListBuffer;
+    private static FloatBuffer vertexBuffer;
+    private static FloatBuffer colorBuffer;
+    private static ShortBuffer drawListBuffer;
 
-    private final float[] ModelMatrix = new float[16];      // Transformations
-    private static final float PAPER_RATIO = 11 / 8.5f;
-    private static final float SCALE_Y = 1000;
-    private static final float SCALE_X = SCALE_Y * PAPER_RATIO;
+    private final float[] ModelMatrix = new float[16];      // Used for transformations
+    private static final float PAPER_RATIO = 11 / 8.5f;     // Like A4 sheet of paper
+    private static float SCALE_Y = 1000;                    // Half the size in the Y axis, as well as the other axes
+    private static float SCALE_X = SCALE_Y * PAPER_RATIO;
     private static final float SCALE_Z = 0.5f;
 
-    private float pitch = -90.f;
-
     // Move the sheet so the origin is in the middle of where the sheet falls
-    private float xLocation = 0;
-    private float yLocation = SCALE_Y;
-    private float zLocation = -SCALE_Y;
+    private static float xLocation = 0;
+    private static float yLocation = SCALE_Y;
+    private static float zLocation = -SCALE_Y;
 
+    ////////////////////////
+    // Variables unique to each PaperSheet
+    private float pitch = -90.f;
     private boolean rotating = false;
     private boolean shouldDelete = false;
     private boolean floor = false;
-    private boolean shouldHaveHole = true;
 
-    public PaperSheet() {
-        construct();
+    public PaperSheet() {}
+
+    public PaperSheet(boolean floor_) {
+        floor = floor_;
+        if (floor) {
+            pitch = 90.f;
+        }
     }
 
-    public PaperSheet(boolean shouldHaveHole_) {
-        shouldHaveHole = shouldHaveHole_;
-        construct();
+    public static void initGL() {
+        if (!glInitialized) {
+            // Set up Shaders
+            int vertexShader = PaperGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
+            int fragmentShader = PaperGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+
+            glProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(glProgram, vertexShader);
+            GLES20.glAttachShader(glProgram, fragmentShader);
+            GLES20.glLinkProgram(glProgram);
+            initGeometry();
+            glInitialized = true;
+        }
     }
 
-    private void construct() {
-        initGeometry();
-        initGL();
-    }
-
-    private void initGL() {
-        // Set up Shaders
-        int vertexShader = PaperGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-        int fragmentShader = PaperGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
-
-        glProgram = GLES20.glCreateProgram();
-        GLES20.glAttachShader(glProgram, vertexShader);
-        GLES20.glAttachShader(glProgram, fragmentShader);
-        GLES20.glLinkProgram(glProgram);
-    }
-
-    private void initGeometry() {
+    private static void initGeometry() {
         // Vertex Buffer
         ByteBuffer bb = ByteBuffer.allocateDirect(vertices.length * Float.BYTES);
         bb.order(ByteOrder.nativeOrder());
@@ -139,6 +142,21 @@ public class PaperSheet implements IGameObject {
         drawListBuffer = dlb.asShortBuffer();
         drawListBuffer.put(drawOrder);
         drawListBuffer.position(0);
+    }
+
+    /**
+     * Sets the PaperSize with the given height, width is automatically calculated
+     * @param height
+     */
+    public static void setPaperSize(float height) {
+        SCALE_Y = height;
+        SCALE_X = SCALE_Y * PAPER_RATIO;
+        yLocation = SCALE_Y;
+        zLocation = -SCALE_Y;
+    }
+
+    public static float getPaperWidth() {
+        return SCALE_X;
     }
 
     public void startRotating() {
@@ -214,10 +232,5 @@ public class PaperSheet implements IGameObject {
 
     public boolean getShouldDelete() {
         return shouldDelete;
-    }
-
-    public void setFloor() {
-        floor = true;
-        pitch = 90.0f;
     }
 }
