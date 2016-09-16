@@ -6,6 +6,7 @@ import android.view.MotionEvent;
 
 import com.studioussoftware.paperescaper.gameobjects.Camera;
 import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
+import com.studioussoftware.paperescaper.interfaces.ICameraToGL;
 import com.studioussoftware.paperescaper.interfaces.ILevelChangedListener;
 import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.studioussoftware.paperescaper.model.Axis;
@@ -18,13 +19,18 @@ import com.studioussoftware.paperescaper.model.Vector3;
  */
 public class GameManager implements IManager {
 
-    private ILevelChangedListener levelChangedListener;
-    private PaperGLRenderer renderer;
+    private static final long serialVersionUID = 1262935185132526255L;
+
+    // These two classes aren't Serializable, they'll be passed in anew when game recreated
+    private transient ILevelChangedListener levelChangedListener;
+    private transient ICameraToGL cameraToGLHandler;
+
     private Camera camera;
     private BoundsChecker boundsChecker;
 
     private boolean gameInitialized = false;
     private boolean gameStarted = false;
+    private boolean paused = false;
     private boolean playerDead = false;
     private int level = 1;
 
@@ -38,8 +44,8 @@ public class GameManager implements IManager {
     private LinkedList<PaperSheet> sheets;
     private PaperSheet floor;
 
-    public GameManager(PaperGLRenderer renderer_) {
-        renderer = renderer_;
+    public GameManager(ICameraToGL cameraToGL_) {
+        cameraToGLHandler = cameraToGL_;
 
         updateFloorSize();
     }
@@ -54,6 +60,14 @@ public class GameManager implements IManager {
             createInitialSheets();
             gameInitialized = true;
         }
+    }
+
+    public void pause() {
+        paused = true;
+    }
+
+    public void unpause() {
+        paused = false;
     }
 
     @Override
@@ -99,10 +113,19 @@ public class GameManager implements IManager {
 
     public void setLevelChangedListener(ILevelChangedListener listener) {
         levelChangedListener = listener;
+
+        if (levelChangedListener != null) {
+            levelChangedListener.onLevelChanged(level);
+        }
+    }
+
+    public void setCameraToGLHandler(ICameraToGL handler) {
+        cameraToGLHandler = handler;
+        updateCamera();
     }
 
     private void updateCamera() {
-        renderer.updateCamera(camera.getPosition(), camera.getForward(), camera.getUp());
+        cameraToGLHandler.updateCamera(camera.getPosition(), camera.getForward(), camera.getUp());
     }
 
     private void createInitialSheets() {
@@ -138,6 +161,9 @@ public class GameManager implements IManager {
     }
 
     public void updateGame() {
+        if (paused) {
+            return;
+        }
         if (!gameStarted) {
             // if timer == 2000
             gameStarted = true;
@@ -162,9 +188,11 @@ public class GameManager implements IManager {
     }
 
     public void drawGame(float[] perspectiveMatrix, float[] vMatrix) {
-        floor.draw(perspectiveMatrix, vMatrix);
-        for (PaperSheet sheet : sheets) {
-            sheet.draw(perspectiveMatrix, vMatrix);
+        if (!paused) {
+            floor.draw(perspectiveMatrix, vMatrix);
+            for (PaperSheet sheet : sheets) {
+                sheet.draw(perspectiveMatrix, vMatrix);
+            }
         }
     }
 }

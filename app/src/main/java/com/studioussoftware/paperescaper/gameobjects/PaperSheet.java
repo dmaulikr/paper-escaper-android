@@ -16,6 +16,8 @@ import java.nio.ShortBuffer;
  */
 public class PaperSheet implements IGameObject {
 
+    private static final long serialVersionUID = 928946056241175384L;
+
     ////////////////////////
     // OpenGL and Geometry variables common to all PaperSheets
     private static final String vertexShaderCode =
@@ -107,6 +109,10 @@ public class PaperSheet implements IGameObject {
             initGeometry();
             glInitialized = true;
         }
+    }
+
+    public static void resetGL() {
+        glInitialized = false;
     }
 
     private static void initGeometry() {

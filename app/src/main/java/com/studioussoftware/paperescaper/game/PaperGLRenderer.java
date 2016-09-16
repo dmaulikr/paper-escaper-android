@@ -5,6 +5,8 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
 import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
+import com.studioussoftware.paperescaper.interfaces.ICameraToGL;
+import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.studioussoftware.paperescaper.model.Difficulty;
 import com.studioussoftware.paperescaper.model.Vector3;
 import com.studioussoftware.paperescaper.views.PaperGLView;
@@ -15,7 +17,7 @@ import javax.microedition.khronos.opengles.GL10;
 /**
  * Created by Robbie Wolfe on 8/8/2016.
  */
-public class PaperGLRenderer implements GLSurfaceView.Renderer {
+public class PaperGLRenderer implements GLSurfaceView.Renderer, ICameraToGL {
 
     private final float[] PerspectiveMatrix = new float[16];
     private final float[] ViewMatrix = new float[16];
@@ -27,6 +29,16 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer {
         view.setManager(manager);
     }
 
+    public void setManager(IManager manager_) {
+        manager = (GameManager) manager_;
+    }
+
+    /**
+     * Takes the Camera vectors and converts them to an OpenGL matrix
+     * @param position
+     * @param forward
+     * @param up
+     */
     public void updateCamera(Vector3 position, Vector3 forward, Vector3 up) {
         Matrix.setLookAtM(ViewMatrix, 0,
                 position.x, position.y, position.z,

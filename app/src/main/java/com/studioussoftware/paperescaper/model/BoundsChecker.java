@@ -1,9 +1,12 @@
 package com.studioussoftware.paperescaper.model;
 
+import java.io.Serializable;
+
 /**
  * Created by Robbie Wolfe on 9/15/2016.
  */
-public class BoundsChecker {
+public class BoundsChecker implements Serializable {
+    private static final long serialVersionUID = 7279090449525947554L;
     private float boundWidth, boundHeight;
 
     /**

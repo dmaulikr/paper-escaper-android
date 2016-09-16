@@ -2,12 +2,15 @@ package com.studioussoftware.paperescaper.model;
 
 import android.opengl.Matrix;
 
+import java.io.Serializable;
 import java.math.RoundingMode;
 
 /**
  * Created by Robbie Wolfe on 8/9/2016.
  */
-public class Vector3 {
+public class Vector3 implements Serializable {
+    private static final long serialVersionUID = -8662262672774118227L;
+
     public static final Vector3 UNIT_X = new Vector3(1, 0, 0);
     public static final Vector3 UNIT_Y = new Vector3(0, 1, 0);
     public static final Vector3 UNIT_Z = new Vector3(0, 0, 1);

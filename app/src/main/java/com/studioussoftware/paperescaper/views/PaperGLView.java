@@ -2,6 +2,7 @@ package com.studioussoftware.paperescaper.views;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
@@ -15,7 +16,9 @@ import com.zerokol.views.JoystickView;
  */
 public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystickMoveListener {
 
+    private final String MANAGER_KEY = "Manager";
     private IManager manager = null;
+    private PaperGLRenderer renderer;
     private ILevelChangedListener levelChangedListener = null;
 
     public PaperGLView(Context context, AttributeSet attrs) {
@@ -32,7 +35,8 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2);
 
-        setRenderer(new PaperGLRenderer(this));
+        renderer = new PaperGLRenderer(this);
+        setRenderer(renderer);
     }
 
     /**
@@ -48,7 +52,9 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
 
     public void setManager(IManager obj) {
         manager = obj;
-        manager.setLevelChangedListener(levelChangedListener);
+        if (manager != null) {
+            manager.setLevelChangedListener(levelChangedListener);
+        }
     }
 
     @Override
@@ -65,5 +71,31 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
         if (manager != null) {
             manager.onJoystickMove(angle, power, direction);
         }
+    }
+
+    /**
+     * When game closing temporarily, save the Manager for later
+     * @param outState
+     */
+    public void saveInstanceState(Bundle outState) {
+        outState.putSerializable(MANAGER_KEY, manager);
+    }
+
+    /**
+     * When game reloaded, update all the pointers to use the saved Manager class
+     * @param inState
+     */
+    public void loadFromSavedInstanceState(Bundle inState) {
+        setManager((IManager)inState.get(MANAGER_KEY));
+        renderer.setManager(manager);
+        manager.setCameraToGLHandler(renderer);
+    }
+
+    public void pause() {
+        manager.pause();
+    }
+
+    public void unpause() {
+        manager.unpause();
     }
 }

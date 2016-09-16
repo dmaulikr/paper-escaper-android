@@ -5,10 +5,14 @@ import com.studioussoftware.paperescaper.model.Constants;
 import com.studioussoftware.paperescaper.model.BoundsChecker;
 import com.studioussoftware.paperescaper.model.Vector3;
 
+import java.io.Serializable;
+
 /**
  * Created by Robbie Wolfe on 8/9/2016.
  */
-public class Camera {
+public class Camera implements Serializable {
+    private static final long serialVersionUID = -5775578841245794214L;
+
     private Vector3 position = new Vector3();
     private Vector3 forward = new Vector3();
     private Vector3 up = new Vector3();
@@ -62,6 +66,21 @@ public class Camera {
         // Only walk if within the game bounds (or regardless if DEV_MODE)
         if (Constants.DEV_MODE || boundsChecker.withinBounds(position, movementVec)) {
             position = position.added(movementVec);
+        }
+        else {
+            // Try with one of the axes being zero, first X
+            Vector3 newMovementVec = movementVec.clone();
+            newMovementVec.x = 0;
+            if (boundsChecker.withinBounds(position, newMovementVec)) {
+                position = position.added(newMovementVec);
+            }
+            else {
+                // Try again with Z
+                movementVec.z = 0;
+                if (boundsChecker.withinBounds(position, movementVec)) {
+                    position = position.added(movementVec);
+                }
+            }
         }
     }
 
