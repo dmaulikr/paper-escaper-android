@@ -75,9 +75,42 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer, ICameraToGL {
     public static int loadShader(int type, String shaderCode) {
         int shader = GLES20.glCreateShader(type);
 
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
+        if (shader != 0) {
+            GLES20.glShaderSource(shader, shaderCode);
+            GLES20.glCompileShader(shader);
+
+            // Check if compiled wrong
+            int[] compiled = new int[1];
+            GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0);
+            if (compiled[0] == 0) {
+                String info = GLES20.glGetShaderInfoLog(shader);
+                GLES20.glDeleteShader(shader);
+                throw new RuntimeException("Could not compile program: " + info + " | " + shaderCode);
+            }
+        }
 
         return shader;
+    }
+
+    public static int createGLProgram(int[] shaders) {
+        int glProgram = GLES20.glCreateProgram();
+
+        if (shaders != null) {
+            for (int shader : shaders) {
+                GLES20.glAttachShader(glProgram, shader);
+            }
+        }
+        GLES20.glLinkProgram(glProgram);
+
+        // Make sure the shader compiled right
+        int[] linkStatus = new int[1];
+        GLES20.glGetProgramiv(glProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+        if (linkStatus[0] != GLES20.GL_TRUE) {
+            String info = GLES20.glGetProgramInfoLog(glProgram);
+            GLES20.glDeleteProgram(glProgram);
+            throw new RuntimeException("Could not link program: " + info);
+        }
+
+        return glProgram;
     }
 }

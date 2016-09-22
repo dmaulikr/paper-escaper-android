@@ -134,9 +134,13 @@ public class GameManager implements IManager {
 
         sheets = new LinkedList<>();
         for (int i = 0; i < 4; ++i) {
-            sheets.add(new PaperSheet());
+            sheets.add(new PaperSheet(randomHoleSize()));
         }
         sheets.getLast().startRotating();
+    }
+
+    private float randomHoleSize() {
+        return (float) (Math.random() * PaperSheet.MAX_HOLE_SIZE) + PaperSheet.MIN_HOLE_SIZE;
     }
 
     public void updateDifficulty(Difficulty level) {
@@ -181,7 +185,7 @@ public class GameManager implements IManager {
                     levelChangedListener.onLevelChanged(level);
                 }
                 sheets.removeLast();
-                sheets.addFirst(new PaperSheet());
+                sheets.addFirst(new PaperSheet(randomHoleSize()));
                 sheets.getLast().startRotating();
             }
         }

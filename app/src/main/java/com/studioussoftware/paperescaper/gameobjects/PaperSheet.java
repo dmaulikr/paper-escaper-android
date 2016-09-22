@@ -5,6 +5,7 @@ import android.opengl.Matrix;
 
 import com.studioussoftware.paperescaper.game.PaperGLRenderer;
 import com.studioussoftware.paperescaper.interfaces.IGameObject;
+import com.studioussoftware.paperescaper.model.Vector3;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,22 +22,42 @@ public class PaperSheet implements IGameObject {
     ////////////////////////
     // OpenGL and Geometry variables common to all PaperSheets
     private static final String vertexShaderCode =
+            "uniform vec2 uHoleLocation;" +
+            "uniform float uHoleSize;" +
             "uniform mat4 uVMatrix;" +
             "uniform mat4 uMMatrix;" +
             "uniform mat4 uPMatrix;" +
             "attribute vec4 aVertexPosition;" +     // passed in
             "attribute vec4 aVertexColor;" +
+            "attribute vec2 aTextureCoord;" +
             "varying vec4 vColor;" +
+            "varying vec2 vTextureCoord;" +
+            "varying vec2 vHoleLocation;" +   // transformed with model matrix
+            "varying float vHoleSize;" +
             "void main() {" +
             "  gl_Position = uPMatrix * uVMatrix * uMMatrix * aVertexPosition;" +
-            "  vColor = aVertexColor;" +    // pass the vertex's color to the pixel shader
+            "  vColor = aVertexColor;" +    // pass the attributes to the fragment shader
+            "  vTextureCoord = aTextureCoord;" +
+            "  vHoleLocation = uHoleLocation;" +
+            "  vHoleSize = uHoleSize;" +
             "}";
 
     private static final String fragmentShaderCode =
             "precision mediump float;" +    // how precise to be with floats
             "varying vec4 vColor;" +        // interpolated from the vertices
+            "varying vec2 vTextureCoord;" +
+            "varying vec2 vHoleLocation;" +
+            "varying float vHoleSize;" +
             "void main() {" +
-            "  gl_FragColor = vColor;" +
+            "  vec2 distanceFromHole = vTextureCoord - vHoleLocation;" +
+            "  float distance = sqrt(distanceFromHole.x * distanceFromHole.x +" +
+            "                        distanceFromHole.y * distanceFromHole.y);" +
+            "  if (distance > vHoleSize) {" +   // outside of hole
+            "    gl_FragColor = vColor;" +
+            "  }" +
+            "  else {" +
+            "    gl_FragColor = vec4(0.0,0.0,0.0,0.0);" +   // see through
+            "  }" +
             "}";
 
     private static boolean glInitialized = false;
@@ -65,8 +86,23 @@ public class PaperSheet implements IGameObject {
     private static final float colorBack[] =  {0, 1.0f, 0, 1.0f};
     private static final int colorStride = COORDS_PER_COLOR * Float.BYTES;
 
+    private static final int COORDS_PER_TEXTURE = 2;
+    private static final float textureCoords[] = {
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            1.0f, 1.0f,
+            1.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 1.0f
+    };
+    private static final int textureCoordStride = COORDS_PER_TEXTURE * Float.BYTES;
+
     private static FloatBuffer vertexBuffer;
     private static FloatBuffer colorBuffer;
+    private static FloatBuffer textureCoordBuffer;
     private static ShortBuffer drawListBuffer;
 
     private final float[] ModelMatrix = new float[16];      // Used for transformations
@@ -80,14 +116,31 @@ public class PaperSheet implements IGameObject {
     private static float yLocation = SCALE_Y;
     private static float zLocation = -SCALE_Y;
 
+    public static final float MAX_HOLE_SIZE = 0.4f;
+    public static final float MIN_HOLE_SIZE = 0.001f;
+    private static final float MAX_HOLE_COORD = 1.0f;
+    private static final float MIN_HOLE_COORD = 0.0f;
+
     ////////////////////////
     // Variables unique to each PaperSheet
+    private Vector3 holeLocation;
+    private FloatBuffer holeLocationBuffer;
+    private final int holeLocationStride = COORDS_PER_TEXTURE * Float.BYTES;
+    private float holeSize = 0;
+
     private float pitch = -90.f;
     private boolean rotating = false;
     private boolean shouldDelete = false;
     private boolean floor = false;
 
-    public PaperSheet() {}
+    /**
+     * Sets up a PaperSheet with a hole
+     * @param holeSize_ should be between MAX_HOLE_SIZE and MIN_HOLE_SIZE
+     */
+    public PaperSheet(float holeSize_) {
+        holeSize = Math.max(Math.min(holeSize_, MAX_HOLE_SIZE), MIN_HOLE_SIZE);
+        setupHole();
+    }
 
     public PaperSheet(boolean floor_) {
         floor = floor_;
@@ -96,16 +149,24 @@ public class PaperSheet implements IGameObject {
         }
     }
 
+    private void setupHole() {
+        holeLocation = new Vector3((float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD,
+                                   (float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD, 0);
+        float[] holeLocationFloatArray = new float[] { holeLocation.x, holeLocation.y };
+        ByteBuffer bb = ByteBuffer.allocateDirect(holeLocationStride);
+        bb.order(ByteOrder.nativeOrder());
+        holeLocationBuffer = bb.asFloatBuffer();
+        holeLocationBuffer.put(holeLocationFloatArray);
+        holeLocationBuffer.position(0);
+    }
+
     public static void initGL() {
         if (!glInitialized) {
             // Set up Shaders
             int vertexShader = PaperGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
             int fragmentShader = PaperGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
 
-            glProgram = GLES20.glCreateProgram();
-            GLES20.glAttachShader(glProgram, vertexShader);
-            GLES20.glAttachShader(glProgram, fragmentShader);
-            GLES20.glLinkProgram(glProgram);
+            glProgram = PaperGLRenderer.createGLProgram(new int[] { vertexShader, fragmentShader} );
             initGeometry();
             glInitialized = true;
         }
@@ -141,6 +202,13 @@ public class PaperSheet implements IGameObject {
         colorBuffer = bb.asFloatBuffer();
         colorBuffer.put(colors);
         colorBuffer.position(0);
+
+        // Texture Coordinate Buffer
+        bb = ByteBuffer.allocateDirect(textureCoords.length * Float.BYTES);
+        bb.order(ByteOrder.nativeOrder());
+        textureCoordBuffer = bb.asFloatBuffer();
+        textureCoordBuffer.put(textureCoords);
+        textureCoordBuffer.position(0);
 
         // Draw Order Buffer
         ByteBuffer dlb = ByteBuffer.allocateDirect(drawOrder.length * Short.BYTES);
@@ -207,9 +275,14 @@ public class PaperSheet implements IGameObject {
 
         GLES20.glUseProgram(glProgram);
 
+        // Don't draw shapes facing away from the camera
         GLES20.glFrontFace(GLES20.GL_CCW); // Front face in counter-clockwise orientation
         GLES20.glEnable(GLES20.GL_CULL_FACE); // Enable cull face
         GLES20.glCullFace(GLES20.GL_BACK); // Cull the back face (don't display)
+
+        // Enable transparency
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
         int positionHandle = GLES20.glGetAttribLocation(glProgram, "aVertexPosition");
         GLES20.glEnableVertexAttribArray(positionHandle);
@@ -218,6 +291,19 @@ public class PaperSheet implements IGameObject {
         int colorHandle = GLES20.glGetAttribLocation(glProgram, "aVertexColor");
         GLES20.glEnableVertexAttribArray(colorHandle);
         GLES20.glVertexAttribPointer(colorHandle, COORDS_PER_COLOR, GLES20.GL_FLOAT, false, colorStride, colorBuffer);
+
+        int textureCoordHandle = GLES20.glGetAttribLocation(glProgram, "aTextureCoord");
+        GLES20.glEnableVertexAttribArray(textureCoordHandle);
+        GLES20.glVertexAttribPointer(textureCoordHandle, COORDS_PER_TEXTURE, GLES20.GL_FLOAT, false, textureCoordStride, textureCoordBuffer);
+
+        // Pass the hole information to the shader
+        int holeLocationHandle = GLES20.glGetUniformLocation(glProgram, "uHoleLocation");
+        int holeSizeHandle = GLES20.glGetUniformLocation(glProgram, "uHoleSize");
+
+        if (!floor) { // which doesn't have a hole
+            GLES20.glUniform2fv(holeLocationHandle, 1, holeLocationBuffer);
+        }
+        GLES20.glUniform1f(holeSizeHandle, holeSize);
 
         // Get a handle to the vertex shader's matrices
         int perspectiveHandle = GLES20.glGetUniformLocation(glProgram, "uPMatrix");
