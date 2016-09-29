@@ -7,7 +7,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 import com.studioussoftware.paperescaper.game.PaperGLRenderer;
-import com.studioussoftware.paperescaper.interfaces.ILevelChangedListener;
+import com.studioussoftware.paperescaper.interfaces.IGuiUpdater;
 import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.zerokol.views.JoystickView;
 
@@ -19,7 +19,7 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
     private final String MANAGER_KEY = "Manager";
     private IManager manager = null;
     private PaperGLRenderer renderer;
-    private ILevelChangedListener levelChangedListener = null;
+    private IGuiUpdater guiUpdater = null;
 
     public PaperGLView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -43,17 +43,17 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
      * Meant to go to the manager, either now or later
      * @param listener
      */
-    public void setLevelChangedListener(ILevelChangedListener listener) {
-        levelChangedListener = listener;
+    public void setGuiUpdater(IGuiUpdater listener) {
+        guiUpdater = listener;
         if (manager != null) {
-            manager.setLevelChangedListener(listener);
+            manager.setGuiUpdater(listener);
         }
     }
 
     public void setManager(IManager obj) {
         manager = obj;
         if (manager != null) {
-            manager.setLevelChangedListener(levelChangedListener);
+            manager.setGuiUpdater(guiUpdater);
         }
     }
 
@@ -98,4 +98,6 @@ public class PaperGLView extends GLSurfaceView implements JoystickView.OnJoystic
     public void unpause() {
         manager.unpause();
     }
+
+    public void restart() { manager.restart(); }
 }

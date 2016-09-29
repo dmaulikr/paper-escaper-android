@@ -7,7 +7,7 @@ import android.view.MotionEvent;
 import com.studioussoftware.paperescaper.gameobjects.Camera;
 import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
 import com.studioussoftware.paperescaper.interfaces.ICameraToGL;
-import com.studioussoftware.paperescaper.interfaces.ILevelChangedListener;
+import com.studioussoftware.paperescaper.interfaces.IGuiUpdater;
 import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.studioussoftware.paperescaper.model.Axis;
 import com.studioussoftware.paperescaper.model.BoundsChecker;
@@ -21,13 +21,24 @@ public class GameManager implements IManager {
 
     private static final long serialVersionUID = 1262935185132526255L;
 
-    // These two classes aren't Serializable, they'll be passed in anew when game recreated
-    private transient ILevelChangedListener levelChangedListener;
+    // These classes aren't Serializable, they'll be passed in anew when game recreated
+    private transient IGuiUpdater guiUpdater;
     private transient ICameraToGL cameraToGLHandler;
 
+    private static final Vector3 CAMERA_FORWARD = new Vector3(0, 0, -1);
+    private static final Vector3 CAMERA_UP = new Vector3(0, 1, 0);
     private Camera camera;
     private BoundsChecker boundsChecker;
 
+    private static final float MIN_PLAYER_HEIGHT = 5.f;
+    private static final float PLAYER_INITIAL_X = 400f;
+    private static final float PLAYER_INITIAL_HEIGHT = 1300.f;
+    private static final float PLAYER_INITIAL_Z = 0;
+    private static final float PLAYER_GAME_HEIGHT = 100.f;
+    private static final float PLAYER_CRUSHING_SPEED = 5.f;
+    private static final int GAME_START_TIMER_MAX = 20;//2000;
+
+    private int gameStartTimer = 0;
     private boolean gameInitialized = false;
     private boolean gameStarted = false;
     private boolean paused = false;
@@ -52,9 +63,7 @@ public class GameManager implements IManager {
 
     public void initGame() {
         if (!gameInitialized) {
-            camera = new Camera(new Vector3(400, 1300, 0),
-                    new Vector3(0, 0, -1),
-                    new Vector3(0, 1, 0));
+            camera = new Camera(new Vector3(PLAYER_INITIAL_X, PLAYER_INITIAL_HEIGHT, PLAYER_INITIAL_Z), CAMERA_FORWARD, CAMERA_UP);
             updateCamera();
 
             createInitialSheets();
@@ -62,12 +71,24 @@ public class GameManager implements IManager {
         }
     }
 
+    @Override
     public void pause() {
         paused = true;
     }
 
+    @Override
     public void unpause() {
         paused = false;
+    }
+
+    @Override
+    public void restart() {
+        playerDead = false;
+        gameStarted = true;
+        camera = new Camera(new Vector3(PLAYER_INITIAL_X, PLAYER_GAME_HEIGHT, PLAYER_INITIAL_Z), CAMERA_FORWARD, CAMERA_UP);
+        updateCamera();
+        level = 1;
+        createInitialSheets();  // Will remove all the old ones as well
     }
 
     @Override
@@ -93,10 +114,12 @@ public class GameManager implements IManager {
      * @param y
      */
     private void swipe(float x, float y) {
-        float multiplier = 0.2f;
-        camera.yaw(-x * multiplier);
-        camera.pitch(-y * multiplier);
-        updateCamera();
+        if (!playerDead) {
+            float multiplier = 0.2f;
+            camera.yaw(-x * multiplier);
+            camera.pitch(-y * multiplier);
+            updateCamera();
+        }
     }
 
     /**
@@ -107,18 +130,22 @@ public class GameManager implements IManager {
      */
     @Override
     public void onJoystickMove(int angle, int power, int direction) {
-        camera.walk(-angle, power / 8.f, boundsChecker);
-        updateCamera();
-    }
-
-    public void setLevelChangedListener(ILevelChangedListener listener) {
-        levelChangedListener = listener;
-
-        if (levelChangedListener != null) {
-            levelChangedListener.onLevelChanged(level);
+        if (!playerDead) {
+            camera.walk(-angle, power / 8.f, boundsChecker);
+            updateCamera();
         }
     }
 
+    @Override
+    public void setGuiUpdater(IGuiUpdater listener) {
+        guiUpdater = listener;
+
+        if (guiUpdater != null) {
+            guiUpdater.onLevelChanged(level);
+        }
+    }
+
+    @Override
     public void setCameraToGLHandler(ICameraToGL handler) {
         cameraToGLHandler = handler;
         updateCamera();
@@ -169,24 +196,50 @@ public class GameManager implements IManager {
             return;
         }
         if (!gameStarted) {
-            // if timer == 2000
-            gameStarted = true;
-            camera.setPosition(Axis.Y, 100);
-            updateCamera();
-            // else
-        }
-        if (gameStarted && !playerDead) {
-            for (PaperSheet sheet : sheets) {
-                sheet.update();
+            // Start the game (unless was previously started, then restart() will need to be called to play again)
+            if (gameStartTimer == GAME_START_TIMER_MAX) {
+                gameStarted = true;
+                camera.setPosition(Axis.Y, PLAYER_GAME_HEIGHT);
+                updateCamera();
+                gameStartTimer = GAME_START_TIMER_MAX + 1;
             }
-            if (sheets.getLast().getShouldDelete()) {
-                ++level;
-                if (levelChangedListener != null) {
-                    levelChangedListener.onLevelChanged(level);
+            else if (gameStartTimer < GAME_START_TIMER_MAX) {
+                ++gameStartTimer;
+            }
+        }
+        else {
+            // Collision detection
+            Vector3 playerPosition = camera.getPosition();
+            if (playerDead || sheets.getLast().isColliding(playerPosition.x, playerPosition.y, playerPosition.z)) {
+                // End the game
+                playerDead = true;  // In case it wasn't true already
+
+                if (playerPosition.y > MIN_PLAYER_HEIGHT) {
+                    // Crush the player
+                    camera.setPosition(Axis.Y, playerPosition.y - PLAYER_CRUSHING_SPEED);
+                    updateCamera();
                 }
-                sheets.removeLast();
-                sheets.addFirst(new PaperSheet(randomHoleSize()));
-                sheets.getLast().startRotating();
+                else {
+                    // Player fully crushed
+                    gameStarted = false;
+                    guiUpdater.gameEnded();
+                }
+            }
+
+            // Update all the game objects
+            if (!playerDead) {
+                for (PaperSheet sheet : sheets) {
+                    sheet.update();
+                }
+                if (sheets.getLast().getShouldDelete()) {
+                    ++level;
+                    if (guiUpdater != null) {
+                        guiUpdater.onLevelChanged(level);
+                    }
+                    sheets.removeLast();
+                    sheets.addFirst(new PaperSheet(randomHoleSize()));
+                    sheets.getLast().startRotating();
+                }
             }
         }
     }

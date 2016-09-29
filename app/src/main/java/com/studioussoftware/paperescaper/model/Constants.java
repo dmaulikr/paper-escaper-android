@@ -5,6 +5,7 @@ package com.studioussoftware.paperescaper.model;
  */
 public class Constants {
     public static final boolean DEV_MODE = false;
+    public static final boolean DEBUG_MODE = true;
 
     private Constants(){}
 }

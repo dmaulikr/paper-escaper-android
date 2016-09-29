@@ -2,23 +2,28 @@ package com.studioussoftware.paperescaper.activities;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 
 import com.studioussoftware.paperescaper.R;
 import com.studioussoftware.paperescaper.gameobjects.PaperSheet;
-import com.studioussoftware.paperescaper.interfaces.ILevelChangedListener;
+import com.studioussoftware.paperescaper.interfaces.IGuiUpdater;
+import com.studioussoftware.paperescaper.model.Constants;
 import com.studioussoftware.paperescaper.views.PaperGLView;
 import com.zerokol.views.JoystickView;
 
-public class GameActivity extends Activity implements ILevelChangedListener {
+public class GameActivity extends Activity implements IGuiUpdater {
 
     private PaperGLView glView;
     private String levelPrefix;
     private TextView levelBox;
+    private TextView debugBox;
 
     private boolean resumePromptOpen = false;
+    private boolean restartPromptOpen = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +35,13 @@ public class GameActivity extends Activity implements ILevelChangedListener {
         levelBox = (TextView) findViewById(R.id.levelBox);
         updateLevel(1);
 
+        debugBox = (TextView) findViewById(R.id.debugBox);
+        if (Constants.DEBUG_MODE) {
+            debugBox.setVisibility(View.VISIBLE);
+        }
+
         glView = (PaperGLView) findViewById(R.id.glView);
-        glView.setLevelChangedListener(this);
+        glView.setGuiUpdater(this);
 
         if (savedInstanceState != null) {
             // Resuming previously loaded game, pause and show dialog allowing them to resume
@@ -40,9 +50,9 @@ public class GameActivity extends Activity implements ILevelChangedListener {
             resumePromptOpen = true;
             glView.pause();
             new AlertDialog.Builder(this)
-                .setTitle("Game Paused")
-                .setMessage("Press OK to resume your game")
-                .setPositiveButton("Resume", new DialogInterface.OnClickListener() {
+                .setTitle("Game Paused")    // TODO: Load these strings
+                .setMessage("Press to resume to your game")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         glView.unpause();
@@ -72,7 +82,7 @@ public class GameActivity extends Activity implements ILevelChangedListener {
     @Override
     protected void onResume() {
         // Don't resume while any dialogs are open
-        if (!resumePromptOpen) {
+        if (!resumePromptOpen && !restartPromptOpen) {
             glView.unpause();
         }
         super.onResume();
@@ -85,8 +95,12 @@ public class GameActivity extends Activity implements ILevelChangedListener {
         super.onDestroy();
     }
 
+    /**
+     * IGuiUpdater functions are called from the OpenGL thread, but the GUI updating needs to be done on the UI thread
+     */
+
+    @Override
     public void onLevelChanged(final int level) {
-        // This should be called from the OpenGL thread, but need to do to this on the UI thread
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -97,5 +111,38 @@ public class GameActivity extends Activity implements ILevelChangedListener {
 
     private void updateLevel(int level) {
         levelBox.setText(levelPrefix + " " + level);
+    }
+
+    @Override
+    public void receiveDebugInfo(final String info) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                debugBox.setText(info);
+            }
+        });
+    }
+
+    @Override
+    public void gameEnded() {
+        // If game is minimized while this prompt is open, then when onResume is called it will
+        // unpause the game, even if the prompt is still open. This prevents that
+        final Context context = this;
+        restartPromptOpen = true;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                new AlertDialog.Builder(context)
+                    .setTitle("Game Over")
+                    .setMessage("Press to restart the game")
+                    .setPositiveButton("Restart", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            glView.restart();
+                            restartPromptOpen = false;
+                        }
+                    }).create().show();
+            }
+        });
     }
 }

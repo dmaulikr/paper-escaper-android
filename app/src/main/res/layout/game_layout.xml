@@ -17,6 +17,15 @@
         android:textSize="20sp"
         android:text="@string/level_prefix"/>
 
+    <TextView
+        android:id="@+id/debugBox"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:layout_margin="15dip"
+        android:textSize="20sp" />
+
     <com.zerokol.views.JoystickView
         android:id="@+id/joystick"
         android:layout_width="120dip"

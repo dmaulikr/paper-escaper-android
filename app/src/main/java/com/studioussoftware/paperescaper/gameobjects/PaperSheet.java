@@ -113,7 +113,7 @@ public class PaperSheet implements IGameObject {
 
     // Move the sheet so the origin is in the middle of where the sheet falls
     private static float xLocation = 0;
-    private static float yLocation = SCALE_Y;
+    private static float yLocation = SCALE_Y;       // Have the bottom of the sheet be at Y:0
     private static float zLocation = -SCALE_Y;
 
     public static final float MAX_HOLE_SIZE = 0.4f;
@@ -123,10 +123,13 @@ public class PaperSheet implements IGameObject {
 
     ////////////////////////
     // Variables unique to each PaperSheet
-    private Vector3 holeLocation;
-    private FloatBuffer holeLocationBuffer;
+    private Vector3 holeTextureLocation = new Vector3();
+    private Vector3 holeWorldLocation = new Vector3();
+    private transient boolean holeLocationBufferInitialized = false;    // When deserialized will be false
+    private transient FloatBuffer holeLocationBuffer;
     private final int holeLocationStride = COORDS_PER_TEXTURE * Float.BYTES;
     private float holeSize = 0;
+    private float holeSizeWorld = 0;
 
     private float pitch = -90.f;
     private boolean rotating = false;
@@ -139,7 +142,8 @@ public class PaperSheet implements IGameObject {
      */
     public PaperSheet(float holeSize_) {
         holeSize = Math.max(Math.min(holeSize_, MAX_HOLE_SIZE), MIN_HOLE_SIZE);
-        setupHole();
+        holeSizeWorld = holeSize * Math.max(SCALE_X, SCALE_Y);  // TODO: Since SCALE_Y is bigger, really it's an oval not a circle...?
+        createHole();
     }
 
     public PaperSheet(boolean floor_) {
@@ -149,15 +153,38 @@ public class PaperSheet implements IGameObject {
         }
     }
 
-    private void setupHole() {
-        holeLocation = new Vector3((float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD,
-                                   (float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD, 0);
-        float[] holeLocationFloatArray = new float[] { holeLocation.x, holeLocation.y };
+    private void createHole() {
+        holeTextureLocation.x = (float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD;
+        holeTextureLocation.y = (float) (Math.random() * MAX_HOLE_COORD) + MIN_HOLE_COORD;
+
+        initializeHoleLocationBuffer();
+
+        // Take the texture coordinates and convert them to world coordinates
+        // Thsi includes moving the origin from bottom left to the center of the sheet
+        holeWorldLocation.x = (holeTextureLocation.x * SCALE_X * 2) - SCALE_X;
+        holeWorldLocation.y = (holeTextureLocation.y * SCALE_Y * 2) - SCALE_Y;
+    }
+
+    private void initializeHoleLocationBuffer() {
+        float[] holeLocationFloatArray = new float[] { holeTextureLocation.x, holeTextureLocation.y };
         ByteBuffer bb = ByteBuffer.allocateDirect(holeLocationStride);
         bb.order(ByteOrder.nativeOrder());
         holeLocationBuffer = bb.asFloatBuffer();
         holeLocationBuffer.put(holeLocationFloatArray);
         holeLocationBuffer.position(0);
+
+        holeLocationBufferInitialized = true;
+    }
+
+    /**
+     * Never use the holeLocationBuffer variable directly as it may not be initialized due to Serialization
+     * @return
+     */
+    private FloatBuffer getHoleLocationBuffer() {
+        if (!holeLocationBufferInitialized) {
+            initializeHoleLocationBuffer();
+        }
+        return holeLocationBuffer;
     }
 
     public static void initGL() {
@@ -237,6 +264,60 @@ public class PaperSheet implements IGameObject {
         rotating = true;
     }
 
+    /**
+     * Returns true if the player is outside the hole and the top of the sheet is crushing them
+     * @param playerX
+     * @param playerY
+     * @param playerZ
+     * @return
+     */
+    public boolean isColliding(float playerX, float playerY, float playerZ) {
+        // If page is falling forward and player is outside the hole
+        if (pitch > 0 && !isInHole(playerX, playerZ)) {
+            final float PLAYER_HEIGHT_BUFFER = 10;
+            // Make a vector along the sheet from the spine pointing up
+            double radianPitch = Math.toRadians(pitch);
+            Vector3 sheetVector = new Vector3(0, SCALE_Y * (float) Math.cos(radianPitch), SCALE_Y * (float) Math.sin(radianPitch));
+
+            /**
+			 * Use similar triangles to detect collision
+             *        *
+			 *	     /|		P = player
+			 *	    X |		E = edge of page (page falling clockwise)
+			 *     /| |		X = Point on the falling page above the player
+			 *    / | |	    S = Spine of the book (The pages rotate around S)
+			 *   /  | |     * = sheetVector (origin at S)
+		     * S/___P_E
+             *
+             * This means sheetVector.z corresponds to S-->E, and playerZ should be S-->P
+             * When X's y coordinate (P-->X) is smaller than the player's a collision occurs
+             */
+
+            playerZ += SCALE_Y;     // Make the player's position's origin be centered at spine of the book
+            float triangleRatio = playerZ / sheetVector.z;      // Calculate how much smaller the player's triangle is
+            float sheetHeightAtPlayer = triangleRatio * sheetVector.y;
+            return sheetHeightAtPlayer < playerY + PLAYER_HEIGHT_BUFFER;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if the player is inside the hole (if it was superimposed on the floor)
+     * @param playerX
+     * @param playerZ
+     * @return
+     */
+    private boolean isInHole(float playerX, float playerZ) {
+        // Use the formula for a circle with origin (h,k) with
+        // radius r (x-h)^2 + (y-k)^2 = r^2 to see if inside
+        // TODO: Use formula for an ellipse, since circle is stretched by PAPER_RATIO horizontally
+        // ((x-h)/g)^2 + ((y-k)/j)^2 = r^2
+        return Math.pow(playerX - holeWorldLocation.x, 2) +
+                Math.pow(playerZ - holeWorldLocation.y, 2)
+                <= Math.pow(holeSizeWorld, 2);
+    }
+
     @Override
     public void update() {
         if (rotating) {
@@ -301,7 +382,7 @@ public class PaperSheet implements IGameObject {
         int holeSizeHandle = GLES20.glGetUniformLocation(glProgram, "uHoleSize");
 
         if (!floor) { // which doesn't have a hole
-            GLES20.glUniform2fv(holeLocationHandle, 1, holeLocationBuffer);
+            GLES20.glUniform2fv(holeLocationHandle, 1, getHoleLocationBuffer());
         }
         GLES20.glUniform1f(holeSizeHandle, holeSize);
 

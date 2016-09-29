@@ -11,7 +11,8 @@ public interface IManager extends Serializable {
     boolean handleTouchEvent(MotionEvent event);
     void pause();
     void unpause();
+    void restart();
     void setCameraToGLHandler(ICameraToGL handler);
     void onJoystickMove(int angle, int power, int direction);
-    void setLevelChangedListener(ILevelChangedListener listener);
+    void setGuiUpdater(IGuiUpdater listener);
 }
