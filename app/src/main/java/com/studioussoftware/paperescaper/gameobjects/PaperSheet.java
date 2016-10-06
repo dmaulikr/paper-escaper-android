@@ -5,6 +5,7 @@ import android.opengl.Matrix;
 
 import com.studioussoftware.paperescaper.game.PaperGLRenderer;
 import com.studioussoftware.paperescaper.interfaces.IGameObject;
+import com.studioussoftware.paperescaper.model.Constants;
 import com.studioussoftware.paperescaper.model.Vector3;
 
 import java.nio.ByteBuffer;
@@ -116,10 +117,12 @@ public class PaperSheet implements IGameObject {
     private static float yLocation = SCALE_Y;       // Have the bottom of the sheet be at Y:0
     private static float zLocation = -SCALE_Y;
 
-    public static final float MAX_HOLE_SIZE = 0.4f;
-    public static final float MIN_HOLE_SIZE = 0.001f;
+    public static final float MAX_HOLE_SIZE = 0.3f;
+    public static final float MIN_HOLE_SIZE = 0.005f;
     private static final float MAX_HOLE_COORD = 1.0f;
     private static final float MIN_HOLE_COORD = 0.0f;
+
+    private static float ROTATION_SPEED = 0.25f;
 
     ////////////////////////
     // Variables unique to each PaperSheet
@@ -187,6 +190,17 @@ public class PaperSheet implements IGameObject {
         return holeLocationBuffer;
     }
 
+    /**
+     * Only gives the value if CHEAT_MODE is on, otherwise it's no one's business
+     * @return
+     */
+    public Vector3 getHoleWorldLocation() {
+        if (Constants.CHEAT_MODE) {
+            return holeWorldLocation.clone();
+        }
+        return null;
+    }
+
     public static void initGL() {
         if (!glInitialized) {
             // Set up Shaders
@@ -243,6 +257,10 @@ public class PaperSheet implements IGameObject {
         drawListBuffer = dlb.asShortBuffer();
         drawListBuffer.put(drawOrder);
         drawListBuffer.position(0);
+
+        if (Constants.CHEAT_MODE) {
+            ROTATION_SPEED = 2.f;
+        }
     }
 
     /**
@@ -308,7 +326,7 @@ public class PaperSheet implements IGameObject {
      * @param playerZ
      * @return
      */
-    private boolean isInHole(float playerX, float playerZ) {
+    public boolean isInHole(float playerX, float playerZ) {
         // Use the formula for a circle with origin (h,k) with
         // radius r (x-h)^2 + (y-k)^2 = r^2 to see if inside
         // TODO: Use formula for an ellipse, since circle is stretched by PAPER_RATIO horizontally
@@ -321,7 +339,7 @@ public class PaperSheet implements IGameObject {
     @Override
     public void update() {
         if (rotating) {
-            pitch += 0.25f;
+            pitch += ROTATION_SPEED;
             if (pitch >= 90.f) {
                 rotating = false;
                 shouldDelete = true;

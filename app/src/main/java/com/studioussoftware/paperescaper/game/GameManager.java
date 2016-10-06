@@ -11,6 +11,7 @@ import com.studioussoftware.paperescaper.interfaces.IGuiUpdater;
 import com.studioussoftware.paperescaper.interfaces.IManager;
 import com.studioussoftware.paperescaper.model.Axis;
 import com.studioussoftware.paperescaper.model.BoundsChecker;
+import com.studioussoftware.paperescaper.model.Constants;
 import com.studioussoftware.paperescaper.model.Difficulty;
 import com.studioussoftware.paperescaper.model.Vector3;
 
@@ -239,6 +240,21 @@ public class GameManager implements IManager {
                     sheets.removeLast();
                     sheets.addFirst(new PaperSheet(randomHoleSize()));
                     sheets.getLast().startRotating();
+                }
+
+                if (Constants.CHEAT_MODE) {
+                    // Move automatically towards the hole
+                    Vector3 holeLocation = sheets.getLast().getHoleWorldLocation();     // X, Y, should be X, Z
+                    holeLocation.z = holeLocation.y;
+                    holeLocation.y = PLAYER_GAME_HEIGHT;        // To make no change in Y
+                    camera.walkTowards(holeLocation, 0.1f);
+                    updateCamera();
+                }
+
+                if (Constants.DEBUG_MODE) {
+                    if (guiUpdater != null) {
+                        guiUpdater.receiveDebugInfo("Inside hole? " + sheets.getLast().isInHole(playerPosition.x, playerPosition.z));
+                    }
                 }
             }
         }

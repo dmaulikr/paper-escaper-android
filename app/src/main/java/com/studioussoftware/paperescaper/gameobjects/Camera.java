@@ -84,6 +84,16 @@ public class Camera implements Serializable {
         }
     }
 
+    /**
+     * Move the Camera towards the given location
+     * @param location
+     * @param speed
+     */
+    public void walkTowards(Vector3 location, float speed) {
+        Vector3 movementVec = Vector3.subbed(location, position).scaled(speed);
+        position = position.added(movementVec);
+    }
+
     public Vector3 getForward() {
         return forward;
     }
