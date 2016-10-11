@@ -1,4 +1,20 @@
 <resources>
     <string name="app_name">PaperEscaper</string>
     <string name="level_prefix">Level:</string>
+
+    <string name="highscores_title">High Scores</string>
+    <string name="loading_scores">Loading scores. Please wait&#8230;</string>
+    <string name="storing_online_scores">Storing scores online. Please wait&#8230;</string>
+    <string name="connection_error_title">Connection Error</string>
+    <string name="connection_error_message">There was a problem connecting to the online highscores database</string>
+    <string name="storing_offline_scores">Storing scores. Please wait&#8230;</string>
+    <string name="retrieval_error_title">Retrieval Error</string>
+    <string name="retrieval_error_message">There was a problem retrieving the highscores list</string>
+    <string name="storage_error_title">Storage Error</string>
+    <string name="storage_error_message">There was a problem storing the highscore</string>
+    <string name="store_online">Store online</string>
+    <string name="store_score_title">Save highscore</string>
+    <string name="store_score_message">What is your name?</string>
+    <string name="store_submit">Submit</string>
+    <string name="store_cancel">Cancel</string>
 </resources>
