@@ -1,0 +1,6 @@
+<resources>
+    <!-- mdpi -->
+    <dimen name="splash_img_margin_left">20dp</dimen>
+    <dimen name="splash_text_size">28sp</dimen>
+    <dimen name="splash_text_margin_right">15dp</dimen>
+</resources>

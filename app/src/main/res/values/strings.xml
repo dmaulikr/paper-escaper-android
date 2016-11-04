@@ -1,6 +1,22 @@
 <resources>
     <string name="app_name">PaperEscaper</string>
-    <string name="level_prefix">Level:</string>
+
+    <string name="game_title">Paper\nEscaper</string>
+    <string name="splash_text">Studious Software</string>
+    <string name="splash_logo_desc">logo</string>
+    <string name="splash_font">fonts/mvboli.ttf</string>
+    <string name="menu_font">fonts/Moire-Regular.ttf</string>
+    <string name="start_game">Start Game</string>
+    <string name="instructions">Instructions</string>
+    <string name="high_scores">High Scores</string>
+    <string name="credits">Credits</string>
+    <string name="back">Back</string>
+
+    <string name="instructions_title">Instructions</string>
+    <string name="controls_title">Controls</string>
+    <string name="controls_content">Use the joystick to walk around.\nDrag the screen to look around.</string>
+    <string name="objective_title">Objective</string>
+    <string name="objective_content">Align yourself with the paper hole\nso you don\'t get crushed.</string>
 
     <string name="highscores_title">High Scores</string>
     <string name="loading_scores">Loading scores. Please wait&#8230;</string>
@@ -17,4 +33,22 @@
     <string name="store_score_message">What is your name?</string>
     <string name="store_submit">Submit</string>
     <string name="store_cancel">Cancel</string>
+
+    <string name="credits_title">Created by</string>
+    <string name="ad_unit_id">TODO</string>
+    <string name="credits_website"><a href="http://studioussoftware.com">Studious Software</a></string>
+    <string name="credits_austin">Robbie Wolfe</string>
+    <string name="credits_robbie">with help from JP Landry</string>
+
+    <string name="level_prefix">Level:</string>
+
+    <string name="paused_dialog_title">Paused</string>
+    <string name="paused_dialog_message">Resume your game from where you left off</string>
+    <string name="paused_dialog_button">OK</string>
+
+    <string name="quit_dialog_title">Please confirm</string>
+    <string name="quit_dialog_checkbox">Save current score</string>
+    <string name="quit_dialog_message">Are you sure you want to quit?</string>
+    <string name="quit_dialog_yes">Yes</string>
+    <string name="quit_dialog_no">No</string>
 </resources>

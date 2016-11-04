@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+	android:background="#000"
+    android:gravity="center" >
+    
+    <!--  Underlying canvas object that animates
+    <org.spector.view.SpectorView
+        android:id="@+id/canvas"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />-->
+    
+    <!--  Menu button layout  -->
+    <LinearLayout
+        android:id="@+id/menu_layout"
+	    android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:gravity="center"
+	    android:orientation="vertical" >
+	    <TextView
+	        android:id="@+id/gametitle"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginBottom="50dp"
+	        android:gravity="center_horizontal"
+	        android:text="@string/game_title"
+	        android:textColor="@color/menuTextColor"
+	        android:singleLine="false"
+	        android:lines="2"
+	        android:textSize="@dimen/menu_title_size" />
+	    <Button
+	        android:id="@+id/start"
+	        android:layout_width="@dimen/menu_button_size"
+	        android:layout_height="wrap_content"	        
+	        android:layout_marginBottom="@dimen/menu_button_margin"
+	        android:text="@string/start_game"
+	        android:onClick="onStartGameClick" /> 
+	        
+	    <Button
+	        android:id="@+id/instructions"
+	        android:layout_width="@dimen/menu_button_size"
+	        android:layout_height="wrap_content"
+	        android:layout_marginBottom="@dimen/menu_button_margin"
+	        android:text="@string/instructions"
+	        android:onClick="onInstructionsClick" />
+	   
+	    <Button
+	        android:id="@+id/highscores"
+	        android:layout_width="@dimen/menu_button_size"
+	        android:layout_height="wrap_content"     
+	        android:layout_marginBottom="@dimen/menu_button_margin"
+	        android:text="@string/high_scores"
+	        android:onClick="onHighScoresClick" />
+	    
+	    <Button
+	        android:id="@+id/credits"
+	        android:layout_width="@dimen/menu_button_size"
+	        android:layout_height="wrap_content"
+	        android:text="@string/credits"
+	        android:onClick="onCreditsClick" />
+    </LinearLayout>
+    
+    <!--  Instructions Layout  -->
+    <LinearLayout
+        android:id="@+id/instructions_layout"
+        android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:gravity="center"
+	    android:orientation="vertical"
+	    android:visibility="gone" >
+        <TextView
+            android:id="@+id/instructions_title"
+            android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"	        
+	        android:layout_marginBottom="30dp"
+	        android:text="@string/instructions_title"
+	        android:textColor="@color/menuTextColor"
+	        android:textSize="@dimen/menu_title_size" />
+        <TextView
+            android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"	        
+	        android:layout_marginBottom="20dp"
+	        android:text="@string/controls_title"
+	        android:textColor="@color/menuTextColor"
+	        android:textSize="@dimen/instructions_header" />
+        <TextView
+            android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"	        
+	        android:layout_marginBottom="30dp"
+	        android:text="@string/controls_content"
+	        android:textColor="@color/menuTextColor"
+	        android:textSize="@dimen/instructions_size" />
+        <TextView
+            android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/objective_title"
+	        android:layout_marginBottom="20dp"
+	        android:textColor="@color/menuTextColor"
+	        android:textSize="@dimen/instructions_header" />
+        <TextView
+            android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginBottom="20dp"
+	        android:text="@string/objective_content"
+	        android:textColor="@color/menuTextColor"
+	        android:textSize="@dimen/instructions_size" />
+        <Button
+            android:id="@+id/instructions_back_button"
+            android:layout_width="@dimen/menu_button_size"
+            android:layout_height="wrap_content"
+            android:text="@string/back"
+            android:onClick="onBackButtonClick" />
+    </LinearLayout>
+    
+    <!--  High Scores Layout  -->
+    <RelativeLayout 
+        android:id="@+id/highscores_layout"
+        android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:visibility="gone" >
+        <Button
+            android:id="@+id/highscores_back_button"
+            android:layout_width="@dimen/menu_button_size"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:text="@string/back"
+            android:onClick="onBackButtonClick" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/highscores_back_button"
+		    android:gravity="center"
+		    android:orientation="vertical" >
+	        <TextView
+	            android:id="@+id/highscores_title"
+	            android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"	
+		        android:layout_marginTop="15dp"
+		        android:layout_marginBottom="15dp"
+		        android:text="@string/highscores_title"
+		        android:textColor="@color/menuTextColor"
+		        android:textSize="@dimen/menu_title_size" />
+	        <RadioGroup
+	            android:id="@+id/highscores_radio_group"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:orientation="horizontal" >
+		        <ToggleButton
+		            android:id="@+id/local_toggle"
+		            android:layout_width="100dp"
+		            android:layout_height="wrap_content"
+		            android:textOn="Local"
+		            android:textOff="Local"
+		            android:checked="true"
+		            android:onClick="onToggle" />
+		        <ToggleButton
+		            android:id="@+id/online_toggle"
+		            android:layout_width="100dp"
+		            android:layout_height="wrap_content"
+		            android:textOn="Online"
+		            android:textOff="Online"
+		            android:onClick="onToggle" />
+	        </RadioGroup>
+	        <ScrollView android:id="@+id/scroller"
+	            android:layout_width="fill_parent"
+	            android:layout_height="fill_parent" >
+	            <TableLayout
+	                android:id="@+id/highscores_table"
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:layout_marginLeft="10dp"
+	                android:layout_marginRight="10dp"
+	                android:stretchColumns="1" />
+	        </ScrollView>
+	    </LinearLayout>
+    </RelativeLayout>
+    
+    <!--  Credits Layout  -->
+    <LinearLayout
+        android:id="@+id/credits_layout"
+        android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:gravity="center"
+	    android:orientation="vertical"
+	    android:visibility="gone" >
+        <LinearLayout
+            android:layout_width="wrap_content"
+	    	android:layout_height="wrap_content" >
+		       	<!--<com.google.android.gms.ads.AdView
+	            android:id="@+id/adview"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            ads:adSize="BANNER"
+	            ads:adUnitId="@string/ad_unit_id" />-->
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+	    	android:layout_height="fill_parent"
+	    	android:gravity="center"
+	    	android:orientation="vertical" >
+	        <TextView
+	            android:id="@+id/credits_title"
+	            android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_marginBottom="50dp"
+		        android:text="@string/credits_title"
+		        android:textColor="@color/menuTextColor"
+		        android:textSize="@dimen/menu_title_size" />
+	        <TextView
+	            android:id="@+id/credits_link"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="@string/credits_website"
+	            android:textColorLink="#4babee"
+	            android:textSize="@dimen/credits_size" />
+	        <TextView
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="@string/credits_austin"
+	            android:textColor="@color/menuTextColor"
+	            android:textSize="@dimen/credits_size" />
+	        <TextView
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+		        android:layout_marginBottom="50dp"
+	            android:text="@string/credits_robbie"
+	            android:textColor="@color/menuTextColor"
+	            android:textSize="@dimen/credits_size" />
+	        <Button
+	            android:id="@+id/credits_back_button"
+	            android:layout_width="@dimen/menu_button_size"
+	            android:layout_height="wrap_content"
+	            android:text="@string/back"
+	            android:onClick="onBackButtonClick" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

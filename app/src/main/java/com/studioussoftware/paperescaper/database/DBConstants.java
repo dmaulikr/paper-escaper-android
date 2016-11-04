@@ -28,11 +28,11 @@ public class DBConstants {
     }
     public static final String COMMA_SEP = ",";
     public static final String SQL_CREATE_ENTRIES =
-        "CREATE TABLE" + ScoreEntry.TABLE_NAME + " (" +
-        ScoreEntry._ID + " INTEGER PRIMARY KEY" + COMMA_SEP + " (" +
+        "CREATE TABLE " + ScoreEntry.TABLE_NAME + " (" +
+        ScoreEntry._ID + " INTEGER PRIMARY KEY" + COMMA_SEP +
         ScoreEntry.COLUMN_NAME_NAME + " TEXT" + COMMA_SEP +
         ScoreEntry.COLUMN_NAME_SCORE + " INTEGER" +
-        " )";
+        ")";
     public static final String SQL_DELETE_ENTRIES =
         "DROP TABLE IF EXISTS " + ScoreEntry.TABLE_NAME;
 
