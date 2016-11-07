@@ -40,11 +40,15 @@
     <string name="credits_austin">Robbie Wolfe</string>
     <string name="credits_robbie">with help from JP Landry</string>
 
-    <string name="level_prefix">Level:</string>
+    <string name="current_level">Level: %1$d</string>
 
-    <string name="paused_dialog_title">Paused</string>
+    <string name="paused_dialog_title">Game Paused</string>
     <string name="paused_dialog_message">Resume your game from where you left off</string>
     <string name="paused_dialog_button">OK</string>
+
+    <string name="gameover_dialog_title">Game Over</string>
+    <string name="gameover_dialog_message">Better luck next time</string>
+    <string name="gameover_dialog_button">Main Menu</string>
 
     <string name="quit_dialog_title">Please confirm</string>
     <string name="quit_dialog_checkbox">Save current score</string>

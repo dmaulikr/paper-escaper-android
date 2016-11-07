@@ -71,7 +71,7 @@ public class MenuActivity extends Activity implements ILoadedScoresListener {
         menuCredits = findViewById(R.id.credits);
 
         // Need to easily be able to access back buttons to disable their functionality when hidden
-        backButtons = new HashMap<View, Button>();
+        backButtons = new HashMap<>();
         backButtons.put(menuLayout, null);      // Help know if updating menuLayout
         backButtons.put(instructionsLayout, (Button) findViewById(R.id.instructions_back_button));
         backButtons.put(highscoresLayout, (Button) findViewById(R.id.highscores_back_button));
@@ -244,6 +244,7 @@ public class MenuActivity extends Activity implements ILoadedScoresListener {
             t1.setPadding(textPadding, textPadding, textPadding, textPadding);
             t1.setTextColor(fontColor);
             t1.setText(value.first);
+            t1.setTextSize(fontSize);
 
             t2 = new BorderedTextView(this);
             t2.setPadding(textPadding, textPadding, textPadding, textPadding);
