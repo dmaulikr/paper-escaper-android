@@ -38,6 +38,12 @@ public class GameManager implements IManager {
     private static final float PLAYER_GAME_HEIGHT = 100.f;
     private static final float PLAYER_CRUSHING_SPEED = 5.f;
     private static final int GAME_START_TIMER_MAX = 20;//2000;
+    private static final int NUM_STARTING_SHEETS = 4;   // Created all with the same hole size
+
+    private static float shrinkingAmplitude;    // Hole shrinking variables, used for Exponential function, see below
+    private static float shrinkingMeanLife;
+    private static float fallingAmplitude;      // Pages falling speed variables
+    private static float fallingMeanLife;
 
     private int gameStartTimer = 0;
     private boolean gameInitialized = false;
@@ -58,6 +64,18 @@ public class GameManager implements IManager {
 
     public GameManager(ICameraToGL cameraToGL_) {
         cameraToGLHandler = cameraToGL_;
+
+        // Calculate hole shrinking constants, see Exponential function below
+        float levelOne = 1;         float valueOne = PaperSheet.MAX_HOLE_SIZE;      // Go from big to small
+        float levelTwo = 80;        float valueTwo = PaperSheet.MIN_HOLE_SIZE;      // On level levelTwo + NUM_STARTING_SHEETS the hole size should be valueTwo
+        shrinkingMeanLife   = (levelTwo - levelOne) / (float) Math.log(valueOne / valueTwo);
+        shrinkingAmplitude  = valueOne / (float) (Math.exp(-levelOne / shrinkingMeanLife));
+
+        // Calculate page falling speed constants,
+        levelOne = 1;       valueOne = PaperSheet.MIN_ROTATION_SPEED;       // Start off slow and speed up
+        levelTwo = 160;     valueTwo = PaperSheet.MAX_ROTATION_SPEED;
+        fallingMeanLife = (levelTwo - levelOne) / (float) Math.log(valueOne / valueTwo);
+        fallingAmplitude = valueOne / (float) (Math.exp(-levelOne / fallingMeanLife));
 
         updateFloorSize();
     }
@@ -161,14 +179,37 @@ public class GameManager implements IManager {
         floor = new PaperSheet(true);
 
         sheets = new LinkedList<>();
-        for (int i = 0; i < 4; ++i) {
-            sheets.add(new PaperSheet(randomHoleSize()));
+        for (int i = 0; i < NUM_STARTING_SHEETS; ++i) {
+            sheets.add(new PaperSheet(getAHoleSize()));
         }
         sheets.getLast().startRotating();
     }
 
-    private float randomHoleSize() {
-        return (float) (Math.random() * PaperSheet.MAX_HOLE_SIZE) + PaperSheet.MIN_HOLE_SIZE;
+    /**
+     * Depends on the current level
+     * @return
+     */
+    private float getAHoleSize() {
+        return Math.max(getExponentialFormulaValue(shrinkingAmplitude, shrinkingMeanLife, level), PaperSheet.MIN_HOLE_SIZE);
+    }
+
+    /**
+     * Depends on the current level
+     * @return
+     */
+    private float getFallingSpeed() {
+        return Math.min(getExponentialFormulaValue(fallingAmplitude, fallingMeanLife, level), PaperSheet.MAX_ROTATION_SPEED);
+    }
+
+    /**
+     * Formula for Exponential decay (and apparently growth) is y = A*e^(-t / M)
+     * @param amplitude is A
+     * @param meanLife is M, which has the formula (t2 - t2) / ln(y1 / y2)
+     * @param t is time value
+     * @return
+     */
+    private float getExponentialFormulaValue(float amplitude, float meanLife, float t) {
+        return amplitude * (float) Math.exp(-t / meanLife);
     }
 
     public void updateDifficulty(Difficulty level) {
@@ -238,8 +279,9 @@ public class GameManager implements IManager {
                         guiUpdater.onLevelChanged(level);
                     }
                     sheets.removeLast();
-                    sheets.addFirst(new PaperSheet(randomHoleSize()));
+                    sheets.addFirst(new PaperSheet(getAHoleSize()));
                     sheets.getLast().startRotating();
+                    PaperSheet.setFallingSpeed(getFallingSpeed());
                 }
 
                 if (Constants.CHEAT_MODE) {

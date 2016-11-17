@@ -32,6 +32,7 @@ public class GameActivity extends Activity implements IGuiUpdater, OnCheckedChan
     private boolean resumedOnce = false;    // Check if onResume called at least once
     private boolean resumePromptOpen = false;
     private boolean highscorePromptOpen = false;
+    private final String HIGHSCORE_PROMPT_KEY = "HighScorePromptOpen";
     private boolean saveHighScore = true;
     private int scoresToStore = 0;
 
@@ -57,9 +58,18 @@ public class GameActivity extends Activity implements IGuiUpdater, OnCheckedChan
         glView.setGuiUpdater(this);
 
         if (savedInstanceState != null) {
-            // Resuming previously loaded game, pause and show dialog allowing them to resume
+            // Resuming previously loaded game, pause and show dialog allowing them to resume (unless highscore prompt was open)
             glView.loadFromSavedInstanceState(savedInstanceState);
-            showResumeDialog();
+            highscorePromptOpen = savedInstanceState.getBoolean(HIGHSCORE_PROMPT_KEY);
+
+            if (!highscorePromptOpen) {
+                // Even if Resume dialog was already open, onDestroy closed it so reopen it
+                showResumeDialog();
+            }
+            else {
+                // Reopen the highscore prompt
+                onBackPressed();
+            }
         }
 
         long joystickLoopInterval = 10;  // ms
@@ -70,6 +80,7 @@ public class GameActivity extends Activity implements IGuiUpdater, OnCheckedChan
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         glView.saveInstanceState(outState);
+        outState.putBoolean(HIGHSCORE_PROMPT_KEY, highscorePromptOpen);
         super.onSaveInstanceState(outState);
     }
 

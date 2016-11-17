@@ -80,12 +80,12 @@ public class PaperSheet implements IGameObject {
     };
     private static final short drawOrder[] = { 0, 1, 2, 0, 2, 3,
                                                4, 5, 6, 4, 6, 7};
-    private static final int vertexStride = COORDS_PER_VERTEX * Float.BYTES;
+    private static final int vertexStride = COORDS_PER_VERTEX * Constants.BYTES_PER_FLOAT;
 
     private static final int COORDS_PER_COLOR = 4;
     private static final float colorFront[] = {1.0f, 0, 0, 1.0f};
     private static final float colorBack[] =  {0, 1.0f, 0, 1.0f};
-    private static final int colorStride = COORDS_PER_COLOR * Float.BYTES;
+    private static final int colorStride = COORDS_PER_COLOR * Constants.BYTES_PER_FLOAT;
 
     private static final int COORDS_PER_TEXTURE = 2;
     private static final float textureCoords[] = {
@@ -99,7 +99,7 @@ public class PaperSheet implements IGameObject {
             0.0f, 0.0f,
             0.0f, 1.0f
     };
-    private static final int textureCoordStride = COORDS_PER_TEXTURE * Float.BYTES;
+    private static final int textureCoordStride = COORDS_PER_TEXTURE * Constants.BYTES_PER_FLOAT;
 
     private static FloatBuffer vertexBuffer;
     private static FloatBuffer colorBuffer;
@@ -118,11 +118,13 @@ public class PaperSheet implements IGameObject {
     private static float zLocation = -SCALE_Y;
 
     public static final float MAX_HOLE_SIZE = 0.3f;
-    public static final float MIN_HOLE_SIZE = 0.005f;
+    public static final float MIN_HOLE_SIZE = 0.04f;
     private static final float MAX_HOLE_COORD = 1.0f;
     private static final float MIN_HOLE_COORD = 0.0f;
 
-    private static float ROTATION_SPEED = 0.25f;
+    public static final float MAX_ROTATION_SPEED = 2.0f;
+    public static final float MIN_ROTATION_SPEED = 0.25f;
+    private static float ROTATION_SPEED = MIN_ROTATION_SPEED;
 
     ////////////////////////
     // Variables unique to each PaperSheet
@@ -130,7 +132,7 @@ public class PaperSheet implements IGameObject {
     private Vector3 holeWorldLocation = new Vector3();
     private transient boolean holeLocationBufferInitialized = false;    // When deserialized will be false
     private transient FloatBuffer holeLocationBuffer;
-    private final int holeLocationStride = COORDS_PER_TEXTURE * Float.BYTES;
+    private final int holeLocationStride = COORDS_PER_TEXTURE * Constants.BYTES_PER_FLOAT;
     private float holeSize = 0;
     private float holeSizeWorld = 0;
 
@@ -163,7 +165,7 @@ public class PaperSheet implements IGameObject {
         initializeHoleLocationBuffer();
 
         // Take the texture coordinates and convert them to world coordinates
-        // Thsi includes moving the origin from bottom left to the center of the sheet
+        // This includes moving the origin from bottom left to the center of the sheet
         holeWorldLocation.x = (holeTextureLocation.x * SCALE_X * 2) - SCALE_X;
         holeWorldLocation.y = (holeTextureLocation.y * SCALE_Y * 2) - SCALE_Y;
     }
@@ -219,7 +221,7 @@ public class PaperSheet implements IGameObject {
 
     private static void initGeometry() {
         // Vertex Buffer
-        ByteBuffer bb = ByteBuffer.allocateDirect(vertices.length * Float.BYTES);
+        ByteBuffer bb = ByteBuffer.allocateDirect(vertices.length * Constants.BYTES_PER_FLOAT);
         bb.order(ByteOrder.nativeOrder());
         vertexBuffer = bb.asFloatBuffer();
         vertexBuffer.put(vertices);
@@ -238,28 +240,28 @@ public class PaperSheet implements IGameObject {
         colors[0] = 0; colors[1] = 0; colors[2] = 1.0f;
 
         // Color Buffer
-        bb = ByteBuffer.allocateDirect(colors.length * Float.BYTES);
+        bb = ByteBuffer.allocateDirect(colors.length * Constants.BYTES_PER_FLOAT);
         bb.order(ByteOrder.nativeOrder());
         colorBuffer = bb.asFloatBuffer();
         colorBuffer.put(colors);
         colorBuffer.position(0);
 
         // Texture Coordinate Buffer
-        bb = ByteBuffer.allocateDirect(textureCoords.length * Float.BYTES);
+        bb = ByteBuffer.allocateDirect(textureCoords.length * Constants.BYTES_PER_FLOAT);
         bb.order(ByteOrder.nativeOrder());
         textureCoordBuffer = bb.asFloatBuffer();
         textureCoordBuffer.put(textureCoords);
         textureCoordBuffer.position(0);
 
         // Draw Order Buffer
-        ByteBuffer dlb = ByteBuffer.allocateDirect(drawOrder.length * Short.BYTES);
+        ByteBuffer dlb = ByteBuffer.allocateDirect(drawOrder.length * Constants.BYTES_PER_SHORT);
         dlb.order(ByteOrder.nativeOrder());
         drawListBuffer = dlb.asShortBuffer();
         drawListBuffer.put(drawOrder);
         drawListBuffer.position(0);
 
         if (Constants.CHEAT_MODE) {
-            ROTATION_SPEED = 2.f;
+            //ROTATION_SPEED = MAX_ROTATION_SPEED;
         }
     }
 
@@ -280,6 +282,10 @@ public class PaperSheet implements IGameObject {
 
     public void startRotating() {
         rotating = true;
+    }
+
+    public static void setFallingSpeed(float speed) {
+        ROTATION_SPEED = speed;
     }
 
     /**

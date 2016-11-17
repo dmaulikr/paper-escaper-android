@@ -52,6 +52,15 @@ public abstract class StoreHighScore extends AsyncTask<String, String, String> i
     }
 
     /**
+     * If there was a Dialog showed to the user after execution, call this after it's closed
+     */
+    protected void onDialogClosed() {
+        if (finished) {
+            onFinish();
+        }
+    }
+
+    /**
      * Only called once really finished
      */
     private void onFinish() {

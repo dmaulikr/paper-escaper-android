@@ -1,6 +1,8 @@
 package com.studioussoftware.paperescaper.database;
 
 import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.res.Resources;
 import android.util.Pair;
 
@@ -39,6 +41,14 @@ public class StoreOnlineHighScore extends StoreHighScore {
         HttpClient httpClient = new HttpClient();
         Resources r = parentActivity.getResources();
 
+        OnClickListener errorMessageClick = new OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                finished = true;
+                onDialogClosed();
+            }
+        };
+
         try {
             HttpPost postRequest = new HttpPost(DBConstants.post_url);
             postRequest.setEntity(paramList);
@@ -55,7 +65,7 @@ public class StoreOnlineHighScore extends StoreHighScore {
                 else {
                     // Something bad happened
                     DialogFactory.showAlertDialog(parentActivity,
-                        r.getString(R.string.storage_error_title), r.getString(R.string.storage_error_message));
+                            r.getString(R.string.storage_error_title), r.getString(R.string.storage_error_message), errorMessageClick);
                 }
             }
             else {
@@ -64,7 +74,7 @@ public class StoreOnlineHighScore extends StoreHighScore {
             }
         } catch (IOException e) {
             DialogFactory.showAlertDialog(parentActivity,
-                    r.getString(R.string.connection_error_title), r.getString(R.string.connection_error_message));
+                    r.getString(R.string.connection_error_title), r.getString(R.string.connection_error_message), errorMessageClick);
         } catch (JSONException e) {
             finished = true;    // TODO
         }
