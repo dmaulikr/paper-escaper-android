@@ -48,7 +48,7 @@ public class PaperGLRenderer implements GLSurfaceView.Renderer, ICameraToGL {
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
-        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GLES20.glClearColor(0.7f, 0.7f, 0.7f, 0.7f);
         PaperSheet.initGL();
         manager.updateDifficulty(Difficulty.MEDIUM);    // TODO: Move this elsewhere
         manager.initGame();

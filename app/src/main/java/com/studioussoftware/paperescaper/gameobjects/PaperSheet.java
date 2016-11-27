@@ -45,8 +45,9 @@ public class PaperSheet implements IGameObject {
 
     private static final String fragmentShaderCode =
             "precision mediump float;" +    // how precise to be with floats
+            "uniform sampler2D uTexture;" + // The input texture
             "varying vec4 vColor;" +        // interpolated from the vertices
-            "varying vec2 vTextureCoord;" +
+            "varying vec2 vTextureCoord;" + // interpolated from the vertices
             "varying vec2 vHoleLocation;" +
             "varying float vHoleSize;" +
             "void main() {" +
@@ -54,7 +55,7 @@ public class PaperSheet implements IGameObject {
             "  float distance = sqrt(distanceFromHole.x * distanceFromHole.x +" +
             "                        distanceFromHole.y * distanceFromHole.y);" +
             "  if (distance > vHoleSize) {" +   // outside of hole
-            "    gl_FragColor = vColor;" +
+            "    gl_FragColor = vColor * texture2D(uTexture, vTextureCoord);" +
             "  }" +
             "  else {" +
             "    gl_FragColor = vec4(0.0,0.0,0.0,0.0);" +   // see through
@@ -79,25 +80,31 @@ public class PaperSheet implements IGameObject {
             -1.0f,  1.0f, -1.0f,     // top left
     };
     private static final short drawOrder[] = { 0, 1, 2, 0, 2, 3,
-                                               4, 5, 6, 4, 6, 7};
+                                               4, 5, 6, 4, 6, 7 };
+    private static final int COORDS_PER_SIDE = 6;
     private static final int vertexStride = COORDS_PER_VERTEX * Constants.BYTES_PER_FLOAT;
 
     private static final int COORDS_PER_COLOR = 4;
-    private static final float colorFront[] = {1.0f, 0, 0, 1.0f};
-    private static final float colorBack[] =  {0, 1.0f, 0, 1.0f};
+    private static final float colorFront[] = {1, 1, 1, 1};
+    private static final float colorBack[] =  {1, 1, 1, 1};
     private static final int colorStride = COORDS_PER_COLOR * Constants.BYTES_PER_FLOAT;
 
     private static final int COORDS_PER_TEXTURE = 2;
     private static final float textureCoords[] = {
-            0.0f, 1.0f,
-            0.0f, 0.0f,
+            /**
+             * Normally the origin is the bottom left and (1,1) is the top right (flipped Y axis from the primitive vertices)
+             * In order for the pages to be sideways, have the origin be 'bottom right' of the sheet, and (1,1) being the 'top left'
+             * Keep in mind that the 'Y axis' should be flipped since images have a different coordinate system than OpenGL
+             */
             1.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 1.0f,
             1.0f, 1.0f,
 
+            0.0f, 1.0f,
             1.0f, 1.0f,
             1.0f, 0.0f,
-            0.0f, 0.0f,
-            0.0f, 1.0f
+            0.0f, 0.0f
     };
     private static final int textureCoordStride = COORDS_PER_TEXTURE * Constants.BYTES_PER_FLOAT;
 
@@ -141,21 +148,27 @@ public class PaperSheet implements IGameObject {
     private boolean shouldDelete = false;
     private boolean floor = false;
 
+    private Texture frontTexture, backTexture;    // TODO: Serialization issues!
+
     /**
      * Sets up a PaperSheet with a hole
      * @param holeSize_ should be between MAX_HOLE_SIZE and MIN_HOLE_SIZE
      */
-    public PaperSheet(float holeSize_) {
+    public PaperSheet(float holeSize_, Texture front, Texture back) {
         holeSize = Math.max(Math.min(holeSize_, MAX_HOLE_SIZE), MIN_HOLE_SIZE);
         holeSizeWorld = holeSize * Math.max(SCALE_X, SCALE_Y);  // TODO: Since SCALE_Y is bigger, really it's an oval not a circle...?
         createHole();
+        frontTexture = front;
+        backTexture = back;
     }
 
-    public PaperSheet(boolean floor_) {
-        floor = floor_;
-        if (floor) {
-            pitch = 90.f;
-        }
+    /**
+     * Makes a Floor papersheet without a texture
+     * TODO: Make it have a texture (and a hole)
+     */
+    public PaperSheet() {
+        floor = true;
+        pitch = 90.f;
     }
 
     private void createHole() {
@@ -237,7 +250,6 @@ public class PaperSheet implements IGameObject {
             }
             k += COORDS_PER_COLOR;
         }
-        colors[0] = 0; colors[1] = 0; colors[2] = 1.0f;
 
         // Color Buffer
         bb = ByteBuffer.allocateDirect(colors.length * Constants.BYTES_PER_FLOAT);
@@ -263,6 +275,14 @@ public class PaperSheet implements IGameObject {
         if (Constants.CHEAT_MODE) {
             //ROTATION_SPEED = MAX_ROTATION_SPEED;
         }
+    }
+
+    public Texture getBackTexture() {
+        return backTexture;
+    }
+
+    public void setBackTexture(Texture texture) {
+        backTexture = texture;
     }
 
     /**
@@ -297,7 +317,7 @@ public class PaperSheet implements IGameObject {
      */
     public boolean isColliding(float playerX, float playerY, float playerZ) {
         // If page is falling forward and player is outside the hole
-        if (pitch > 0 && !isInHole(playerX, playerZ)) {
+        if (!Constants.DEV_MODE && pitch > 0 && !isInHole(playerX, playerZ)) {
             final float PLAYER_HEIGHT_BUFFER = 10;
             // Make a vector along the sheet from the spine pointing up
             double radianPitch = Math.toRadians(pitch);
@@ -420,8 +440,24 @@ public class PaperSheet implements IGameObject {
         GLES20.glUniformMatrix4fv(modelHandle, 1, false, ModelMatrix, 0);
         GLES20.glUniformMatrix4fv(viewHandle, 1, false, vMatrix, 0);
 
-        // Draw the square
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.length, GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
+        // Handle Textures
+        GLES20.glEnable(GLES20.GL_TEXTURE_2D);
+
+        // Draw the front of the sheet
+        int textureID = frontTexture != null ? frontTexture.getTextureID() : 0;
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureID);
+        drawListBuffer.position(0);
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, COORDS_PER_SIDE, GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
+
+        // Draw the back of the sheet
+        textureID = backTexture != null ? backTexture.getTextureID() : 0;
+
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureID);
+
+        drawListBuffer.position(COORDS_PER_SIDE);
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, COORDS_PER_SIDE, GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
+
+        GLES20.glDisable(GLES20.GL_TEXTURE_2D);
 
         // Disable vertex array
         GLES20.glDisableVertexAttribArray(positionHandle);
